@@ -11,6 +11,11 @@ import { Updater } from './updater.js'
 // and the browser tests keep away from the real settings
 app.setPath('userData', process.env.CONTENT_TRACKER_USER_DATA ?? path.join(app.getPath('appData'), 'com.garethnunns.content-tracker'))
 
+// the tests run under Playwright, which keeps sign ins in plain text (--password-store=basic):
+// on Linux they put the keyring back, as they check sign ins are kept
+if(process.env.CONTENT_TRACKER_PASSWORD_STORE)
+	app.commandLine.appendSwitch('password-store', process.env.CONTENT_TRACKER_PASSWORD_STORE)
+
 // it's already running, in the menu bar: that one shows its window instead
 if(!app.requestSingleInstanceLock())
 	app.exit()

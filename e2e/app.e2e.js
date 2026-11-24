@@ -29,6 +29,8 @@ const openApp = async (env = {}) => {
 			CONTENT_TRACKER_USER_DATA: path.join(root, 'data'),
 			HOME: root,
 			LOCALAPPDATA: root,
+			// Playwright keeps sign ins in plain text, which the app won't keep them in
+			CONTENT_TRACKER_PASSWORD_STORE: process.platform == 'linux' ? 'gnome-libsecret' : '',
 			...env
 		}
 	})
