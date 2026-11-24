@@ -1,22 +1,82 @@
-name: Publish Package to npmjs
+name: Publish a release
 on:
   release:
     types: [published]
+permissions:
+  contents: read
 jobs:
-  build:
+  npm:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       # Setup .npmrc file to publish to npm
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '20.x'
+          node-version: '22.x'
           registry-url: 'https://registry.npmjs.org'
-      - uses: BellCubeDev/update-package-version-by-release-tag@v2
-      - run: npm ci
-      - run: npm publish --provenance --access public
+      # the install scripts aren't needed to publish, so nothing gets to run beside the token
+      - run: npm ci --ignore-scripts
+      # Google's client secret goes in the package, as it does in the app, but never in git
+      - name: Google client secret
+        run: |
+          test -n "$GOOGLE_CLIENT_SECRET" || { echo "Add the GOOGLE_CLIENT_SECRET repository secret"; exit 1; }
+          node scripts/oauth-secret.mjs
+        env:
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      - run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
+      - name: Release notes
+        run: test -f "docs/release-notes/${GITHUB_REF_NAME#v}.md" || { echo "No docs/release-notes/${GITHUB_REF_NAME#v}.md"; exit 1; }
+      - run: npm test
+      - run: npm publish --provenance --access public --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  app:
+    strategy:
+      matrix:
+        include:
+          # both Macs, Apple Silicon & Intel, from the one runner
+          - os: macos-latest
+            dist: dist:mac
+          - os: windows-latest
+            dist: dist
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22.x'
+          cache: npm
+      # installing writes Google's client secret into the app (scripts/oauth-secret.mjs)
+      - run: npm ci
+        env:
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      - run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
+        shell: bash
+      - run: npm run ${{ matrix.dist }}
+      - run: gh release upload "$GITHUB_REF_NAME" $(ls release/*.dmg release/*.exe 2>/dev/null)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+  screenshots:
+    # the app's pictures, for the website: taken afresh from the released version
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22.x'
+          cache: npm
+      - run: npm ci
+      - run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
+      - run: npm run screenshots
+      - run: cd docs/screenshots && zip -q ../../screenshots.zip *.png
+      - run: gh release upload "$GITHUB_REF_NAME" screenshots.zip
+        env:
+          GH_TOKEN: ${{ github.token }}

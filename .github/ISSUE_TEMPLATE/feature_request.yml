@@ -1,0 +1,32 @@
+name: Feature request
+description: Something it could do, or do better
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like it to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: What's it for?
+      description: What you're tracking and what you'd do with it - the job it would help with, rather than how it might work.
+    validations:
+      required: true
+  - type: textarea
+    id: now
+    attributes:
+      label: How do you manage now?
+      description: A workaround, another tool, or doing it by hand.
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where would you use it?
+      multiple: true
+      options:
+        - The app
+        - The command line
+        - Airtable
+        - Google Sheets

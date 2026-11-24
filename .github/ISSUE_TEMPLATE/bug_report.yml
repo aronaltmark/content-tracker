@@ -1,0 +1,72 @@
+name: Bug report
+description: Something's not working, or something got tracked wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Please don't paste tokens, service account keys or anything from `sign-ins.json` here - this is public. Paths can be shortened or made up, as long as they show the problem.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: In the app it's next to the name, and on the command line `tracker -V`.
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: running
+    attributes:
+      label: How are you running it?
+      options:
+        - App on a Mac (Apple Silicon)
+        - App on a Mac (Intel)
+        - App on Windows
+        - Command line on a Mac
+        - Command line on Windows
+        - Command line on Linux
+    validations:
+      required: true
+  - type: dropdown
+    id: target
+    attributes:
+      label: Where are you tracking?
+      options:
+        - Airtable, signed in
+        - Airtable, with a token
+        - Google Sheets, signed in
+        - Google Sheets, with a service account
+        - It hasn't got that far
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What's wrong?
+      description: What happened, and where - a message, a record in the table, a file that's missing.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can it be made to happen again?
+      description: The folders it's scanning (what kind of drive, roughly how many files) and what you did.
+      placeholder: |
+        1. A Suite drive with about 2,000 files in 05_Delivery
+        2. Run now
+        3. ...
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: From the app's Activity tab, or the command line run with `-l debug`. Leave out anything private.
+      render: text
+  - type: textarea
+    id: config
+    attributes:
+      label: Config
+      description: For the command line, your config with the token taken out. For the app, the settings that matter.
+      render: json

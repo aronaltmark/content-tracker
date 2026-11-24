@@ -1,0 +1,26 @@
+# Keeps the packages and the workflows' actions up to date. Minor and patch
+# updates are merged by themselves once the checks pass (dependabot-auto-merge.yml);
+# a major one waits for someone to look at it.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    # a PR each for what ships and what only builds and tests it, not one for every package
+    groups:
+      dependencies:
+        dependency-type: production
+        update-types: [minor, patch]
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
