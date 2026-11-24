@@ -34,7 +34,7 @@ const PROJECT = [
 	'04 Audio/Walk-on mix v2.wav',
 	'05 Delivery/Opener/Opener_v013.mov',
 	'05 Delivery/Walk-on/Walkon_v004.mov',
-	'05 Delivery/Screens/LED Main 3840x1080_v002.mov',
+	'05 Delivery/Screens/LED Main 7680x1080_v002.mov',
 	'05 Delivery/Stills/Backdrop 4K.png'
 ]
 
@@ -43,11 +43,11 @@ const PROJECT = [
 const video = (codec, width, height, fps, seconds, alpha = false) => ({ streams: [{ codec_type: 'video', codec_name: codec, width, height, r_frame_rate: `${fps}/1`, pix_fmt: alpha ? 'yuva444p12le' : 'yuv422p10le', bit_rate: '400000000' }], format: { duration: String(seconds) } })
 const still = (codec, width, height) => ({ streams: [{ codec_type: 'video', codec_name: codec, width, height, pix_fmt: 'rgb24' }], format: { format_long_name: `piped ${codec} sequence` } })
 const MEDIA = [
-	[/Opener frame/, still('png', 3840, 1080)],
+	[/Opener frame/, still('png', 1920, 540)],
 	[/Opener_v\d+\.mov$/, video('prores', 3840, 1080, 50, 42.5)],
-	[/Walkon_v\d+\.mov$/, video('prores', 3840, 1080, 50, 18, true)],
+	[/Walkon_v\d+\.mov$/, video('prores', 1920, 1080, 25, 18, true)],
 	[/Walk-on mix/, { streams: [{ codec_type: 'audio', codec_name: 'pcm_s24le', sample_rate: '48000', channels: 2, bit_rate: '2304000' }], format: { duration: '48' } }],
-	[/LED Main/, video('hap', 3840, 1080, 50, 120)],
+	[/LED Main/, video('hap', 7680, 1080, 50, 120)],
 	[/Backdrop 4K/, still('png', 3840, 2160)]
 ]
 
@@ -147,12 +147,12 @@ const framed = (width, height) => ({
 // the folders and files the tables show, with what the tracker found out about them
 const ROWS = [
 	{ path: '/03 Renders/Opener/Opener_v013.mov', parent: '/03 Renders/Opener', size: 1843200000, modified: '2026-11-21 16:42', duration: 42.5, codec: 'prores', width: 3840, height: 1080, fps: 50, alpha: false, notes: 'Approved by client' },
-	{ path: '/03 Renders/Walk-on/Walkon_v004.mov', parent: '/03 Renders/Walk-on', size: 925400000, modified: '2026-11-20 11:08', duration: 18, codec: 'prores', width: 3840, height: 1080, fps: 50, alpha: true, notes: '' },
+	{ path: '/03 Renders/Walk-on/Walkon_v004.mov', parent: '/03 Renders/Walk-on', size: 925400000, modified: '2026-11-20 11:08', duration: 18, codec: 'prores', width: 1920, height: 1080, fps: 25, alpha: true, notes: '' },
 	{ path: '/04 Audio/Walk-on mix v2.wav', parent: '/04 Audio', size: 9216000, modified: '2026-11-19 09:30', duration: 48, codec: '', width: 0, height: 0, fps: 0, alpha: false, notes: '' },
 	{ path: '/05 Delivery/Opener/Opener_v013.mov', parent: '/05 Delivery/Opener', size: 1843200000, modified: '2026-11-21 17:05', duration: 42.5, codec: 'hap', width: 3840, height: 1080, fps: 50, alpha: false, notes: 'On the servers' },
-	{ path: '/05 Delivery/Screens/LED Main 3840x1080_v002.mov', parent: '/05 Delivery/Screens', size: 2210000000, modified: '2026-11-22 10:14', duration: 120, codec: 'hap', width: 3840, height: 1080, fps: 50, alpha: false, notes: '' },
+	{ path: '/05 Delivery/Screens/LED Main 7680x1080_v002.mov', parent: '/05 Delivery/Screens', size: 2210000000, modified: '2026-11-22 10:14', duration: 120, codec: 'hap', width: 7680, height: 1080, fps: 50, alpha: false, notes: '' },
 	{ path: '/05 Delivery/Stills/Backdrop 4K.png', parent: '/05 Delivery/Stills', size: 24500000, modified: '2026-11-18 14:51', duration: 0, codec: 'png', width: 3840, height: 2160, fps: 0, alpha: true, notes: '' },
-	{ path: '/05 Delivery/Walk-on/Walkon_v004.mov', parent: '/05 Delivery/Walk-on', size: 925400000, modified: '2026-11-20 11:40', duration: 18, codec: 'hap', width: 3840, height: 1080, fps: 50, alpha: true, notes: 'Needs a re-render' }
+	{ path: '/05 Delivery/Walk-on/Walkon_v004.mov', parent: '/05 Delivery/Walk-on', size: 925400000, modified: '2026-11-20 11:40', duration: 18, codec: 'hap', width: 1920, height: 1080, fps: 25, alpha: true, notes: 'Needs a re-render' }
 ]
 
 const COLUMNS = [

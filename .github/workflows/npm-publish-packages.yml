@@ -30,9 +30,8 @@ jobs:
       - name: Release notes
         run: test -f "docs/release-notes/${GITHUB_REF_NAME#v}.md" || { echo "No docs/release-notes/${GITHUB_REF_NAME#v}.md"; exit 1; }
       - run: npm test
+      # no token: npm's trusted publishing takes GitHub's word for it that this workflow is publishing
       - run: npm publish --provenance --access public --ignore-scripts
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
   app:
     strategy:
       matrix:
