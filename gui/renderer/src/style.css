@@ -1,0 +1,117 @@
+:root {
+	color-scheme: light dark;
+
+	--background: #f5f5f7;
+	--surface: #ffffff;
+	--border: #d8d8de;
+	--text: #1d1d1f;
+	--text-soft: #6b6b73;
+	--accent: #0a6cdf;
+	--accent-text: #ffffff;
+	--error: #c62828;
+	--warning: #a15c00;
+	--success: #1b7f3b;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--background: #1c1c1f;
+		--surface: #2a2a2e;
+		--border: #434349;
+		--text: #f2f2f4;
+		--text-soft: #a2a2ab;
+		--accent: #4a9dff;
+		--accent-text: #0b1b2e;
+		--error: #ff7b72;
+		--warning: #e3b341;
+		--success: #56d364;
+	}
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+	height: 100%;
+	margin: 0;
+}
+
+body {
+	background: var(--background);
+	color: var(--text);
+	font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+button,
+input,
+textarea {
+	color: inherit;
+	font: inherit;
+}
+
+input,
+textarea {
+	width: 100%;
+	padding: 7px 9px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 7px;
+}
+
+textarea {
+	min-height: 64px;
+	resize: vertical;
+	font-family: ui-monospace, Menlo, Consolas, monospace;
+	font-size: 12px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 1px;
+}
+
+input[type='checkbox'] {
+	width: auto;
+	margin: 0;
+}
+
+a {
+	color: var(--accent);
+}
+
+/* controls, which a double click shouldn't select the text of */
+button,
+summary {
+	user-select: none;
+}
+
+button {
+	padding: 7px 13px;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 7px;
+	cursor: pointer;
+}
+
+button:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+button.primary {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: var(--accent-text);
+}
+
+button.quiet {
+	padding: 4px 8px;
+	background: none;
+	border-color: transparent;
+	color: var(--text-soft);
+}
