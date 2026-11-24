@@ -491,31 +491,7 @@ tracker
 
 _You can always `npm unlink` this later._
 
-Everything's in three folders:
-
-- `core/` - the actual tracker, which you can use on its own: `import { syncOnce } from '@garethnunns/content-tracker'`
-- `cli/` - the command line version, which is what npm gets
-- `gui/` - the Electron & Vue app
-
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Runs the app, reloading as you change it. |
-| `npm run build` | Builds the app into `out/`. |
-| `npm run lint` | Lints everything. |
-| `npm test` | Runs the unit tests. |
-| `npm run test:e2e` | Runs the end-to-end tests: the real command line and app, against pretend versions of Airtable, Google, npm and GitHub. |
-| `npm run verify` | Lints, tests and builds. |
-| `npm run check` | `verify`, then the end-to-end tests. |
-| `npm run dist` | Builds the app for the computer you're on, into `release/`. |
-| `npm run dist:mac` | Builds the app for both kinds of Mac, Apple Silicon and Intel. |
-| `npm run schema` | Writes `core/config.schema.json`, which editors use to help write a config, from `core/config-schema.js`. Run it after changing that. |
-| `npm run readme` | Puts `docs/help.md`, the app's Help, into this README's App section. Run it after changing that. |
-| `npm run screenshots` | Takes the pictures in `docs/screenshots`: each of the app's tabs in a Mac window, its menu in the menu bar, and mock-ups of the tables in Google Sheets and Airtable. The app's the real thing, against pretend Airtable and Google. Every release takes them again and attaches them as `screenshots.zip`. |
-| `npm run icons` | Makes the PNGs from the icon, `build/icon.svg`, and the menu bar's, `build/tray.svg`. Run it after changing either. |
-
-Windows has to be built on Windows, as ffprobe is a different program on each, and a build stops if it hasn't got the right one.
-
-Signing in with Google needs the app's client secret, which isn't in git: set `GOOGLE_CLIENT_SECRET` before `npm install`, or `CONTENT_TRACKER_GOOGLE_CLIENT_SECRET` when running it. Signing in with Airtable, and everything else, works without it.
+How it fits together, the commands, building the app and the rules for changing it are all in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Releasing
 
@@ -523,7 +499,7 @@ Publishing a GitHub release, tagged `v<version>`, publishes to npm and attaches 
 
 Dependabot opens a pull request each week for packages with newer versions, and minor and patch updates merge by themselves once the checks pass. Major updates, and the workflows' actions, wait for someone to merge them.
 
-Very welcome to pull requests!
+Very welcome to pull requests! [CONTRIBUTING.md](CONTRIBUTING.md) has how to set up, the rules that keep people's tables safe, and what to check first.
 
 </details>
 
