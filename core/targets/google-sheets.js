@@ -171,6 +171,8 @@ export class GoogleSheetsTarget {
 				const { replies } = await this.#update([{ addSheet: { properties: { title: sheet.name } } }])
 				properties = replies[0].addSheet.properties
 				sheet.created = true
+				// its columns fit what's first written to them, and only then, so widths set by hand stay
+				sheet.fit = true
 			}
 
 			sheet.id = properties.sheetId
@@ -205,10 +207,10 @@ export class GoogleSheetsTarget {
 						}
 					},
 					{
-						// the headers stay in view however far down it's scrolled
+						// the headers, and _path, its first column, stay in view however far it's scrolled
 						updateSheetProperties: {
-							properties: { sheetId: sheet.id, gridProperties: { frozenRowCount: 1 } },
-							fields: 'gridProperties.frozenRowCount'
+							properties: { sheetId: sheet.id, gridProperties: { frozenRowCount: 1, frozenColumnCount: 1 } },
+							fields: 'gridProperties.frozenRowCount,gridProperties.frozenColumnCount'
 						}
 					},
 					{
@@ -329,6 +331,15 @@ export class GoogleSheetsTarget {
 		if(diffs.inserts.length) {
 			const lastRow = 1 + rows.length - done.deleted + done.inserted
 			await this.#checkboxes(sheet, name => columns.get(name) ?? -1, fields, lastRow)
+		}
+
+		if(sheet.fit && done.inserted) {
+			await this.#update([{
+				autoResizeDimensions: {
+					dimensions: { sheetId: sheet.id, dimension: 'COLUMNS', startIndex: 0, endIndex: Math.max(...columns.values()) + 1 }
+				}
+			}])
+			sheet.fit = false
 		}
 
 		return done

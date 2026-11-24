@@ -32,7 +32,7 @@ const REPOSITORY = 'https://github.com/garethnunns/content-tracker'
 				<span :style="{ maskImage: `url(${logo})` }" />
 			</a>
 			<div>
-				<p>Made by Generative Noise</p>
+				<p>© Generative Noise 2024</p>
 				<p>Licensed under <a :href="`${REPOSITORY}/blob/main/LICENSE`">GNU GPL 3</a></p>
 			</div>
 		</section>

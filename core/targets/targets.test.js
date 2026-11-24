@@ -252,15 +252,35 @@ describe('google sheets', () => {
 		expect(ticks().length).toBe(before)
 	})
 
-	it('freezes the header row on a sheet it made, and only those', async () => {
+	it('freezes the header row and _path on a sheet it made, and only those', async () => {
 		const { fake, target } = googleSheets({ Files: [['Notes']] })
 		await target.prepare()
 		const frozen = fake.requests.flatMap(request => request.data?.requests ?? []).filter(request => request.updateSheetProperties)
 		expect(frozen).toHaveLength(1)
 		expect(frozen[0].updateSheetProperties).toEqual({
-			properties: { sheetId: fake.sheets.get('Folders').properties.sheetId, gridProperties: { frozenRowCount: 1 } },
-			fields: 'gridProperties.frozenRowCount'
+			properties: { sheetId: fake.sheets.get('Folders').properties.sheetId, gridProperties: { frozenRowCount: 1, frozenColumnCount: 1 } },
+			fields: 'gridProperties.frozenRowCount,gridProperties.frozenColumnCount'
 		})
+		expect(fake.rows('Folders')[0][0]).toBe('_path')
+	})
+
+	it('fits the columns of a sheet it made to what it first writes, and never again', async () => {
+		const { fake, target } = googleSheets({ Files: [['Notes']] })
+		const fits = () => fake.requests.flatMap(request => request.data?.requests ?? []).filter(request => request.autoResizeDimensions)
+		await target.prepare()
+		expect(fits()).toEqual([])
+
+		await target.apply('files', { inserts: [{ _path: '/a.mov' }], updates: [], deletes: [] })
+		await target.apply('folders', { inserts: [{ _path: '/a' }], updates: [], deletes: [] })
+		expect(fits()).toEqual([{
+			autoResizeDimensions: {
+				dimensions: { sheetId: fake.sheets.get('Folders').properties.sheetId, dimension: 'COLUMNS', startIndex: 0, endIndex: folderFields.length }
+			}
+		}])
+
+		// a sheet it made, written to again, keeps the widths it has
+		await target.apply('folders', { inserts: [{ _path: '/b' }], updates: [], deletes: [] })
+		expect(fits()).toHaveLength(1)
 	})
 
 	it('warns whoever edits its own columns on a sheet it made', async () => {
