@@ -11,13 +11,13 @@
 
 This project came about as a means to track video content on concert shows, but is written generically. It recursively scans folders, which can be mapped network drives or streamed cloud storage like Dropbox, Drive, LucidLink or Suite, and keeps a list of the files & folders on Airtable or Google Sheets.
 
-There's a command line version and Mac & Windows app, which do the same thing.
+There's a command line version and Mac, Windows & Linux app, which do the same thing.
 
 ## Quick Start
 
 ### App
 
-Download the latest version for Mac (Apple Silicon or Intel) or Windows from the [releases page](https://github.com/garethnunns/content-tracker/releases).
+Download the latest version for Mac (Apple Silicon or Intel), Windows or Linux (an AppImage) from the [releases page](https://github.com/garethnunns/content-tracker/releases).
 
 <!-- docs/help.md, the app's Help: change it there, then npm run readme -->
 
@@ -495,7 +495,7 @@ How it fits together, the commands, building the app and the rules for changing 
 
 ### Releasing
 
-Publishing a GitHub release, tagged `v<version>`, publishes to npm and attaches the Mac & Windows apps. Each version's release notes are `docs/release-notes/<version>.md`, which become the GitHub release's description, and the release won't publish without them. npm takes it from this repository's release workflow with no token, by [trusted publishing](https://docs.npmjs.com/trusted-publishers), set up in the package's settings on npm. The release needs a `GOOGLE_CLIENT_SECRET` secret with the Google client secret.
+Publishing a GitHub release, tagged `v<version>`, publishes to npm and attaches the Mac, Windows & Linux apps. Each version's release notes are `docs/release-notes/<version>.md`, which become the GitHub release's description, and the release won't publish without them. npm takes it from this repository's release workflow with no token, by [trusted publishing](https://docs.npmjs.com/trusted-publishers), set up in the package's settings on npm. The release needs a `GOOGLE_CLIENT_SECRET` secret with the Google client secret.
 
 Dependabot opens a pull request each week for packages with newer versions, and minor and patch updates merge by themselves once the checks pass. Major updates, and the workflows' actions, wait for someone to merge them.
 

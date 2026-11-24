@@ -77,7 +77,7 @@ export async function latestRelease({ env = process.env, http = globalThis.fetch
 
 /**
  * The installer of a release for this computer, as the app's build names them
- * (Content-Tracker-1.2.3-mac-arm64.dmg, Content-Tracker-1.2.3-win-x64.exe)
+ * (Content-Tracker-1.2.3-mac-arm64.dmg, Content-Tracker-1.2.3-win-x64.exe, Content-Tracker-1.2.3-linux-x64.AppImage)
  * @param {object} release from latestRelease()
  * @param {string} platform as process.platform
  * @param {string} arch as process.arch
@@ -87,7 +87,8 @@ export function installerFor(release, platform, arch) {
 	const ending = {
 		darwin: [`-mac-${arch}.dmg`],
 		// Windows on Arm runs the x64 one
-		win32: [`-win-${arch}.exe`, '-win-x64.exe']
+		win32: [`-win-${arch}.exe`, '-win-x64.exe'],
+		linux: [`-linux-${arch}.AppImage`]
 	}[platform] ?? []
 
 	for(const end of ending) {

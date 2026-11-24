@@ -38,15 +38,16 @@ describe('updates', () => {
 		const http = answering(() => ({
 			tag_name: 'v1.2.0',
 			html_url: 'https://github.com/release',
-			assets: [asset('Content-Tracker-1.2.0-mac-arm64.dmg'), asset('Content-Tracker-1.2.0-mac-x64.dmg'), asset('Content-Tracker-1.2.0-win-x64.exe')]
+			assets: [asset('Content-Tracker-1.2.0-mac-arm64.dmg'), asset('Content-Tracker-1.2.0-mac-x64.dmg'), asset('Content-Tracker-1.2.0-win-x64.exe'), asset('Content-Tracker-1.2.0-linux-x64.AppImage')]
 		}))
 		const release = await latestRelease({ env: {}, http })
 		expect(release.version).toBe('1.2.0')
 
 		expect(installerFor(release, 'darwin', 'arm64').name).toBe('Content-Tracker-1.2.0-mac-arm64.dmg')
 		expect(installerFor(release, 'darwin', 'x64').name).toBe('Content-Tracker-1.2.0-mac-x64.dmg')
+		expect(installerFor(release, 'linux', 'x64').name).toBe('Content-Tracker-1.2.0-linux-x64.AppImage')
+		expect(installerFor(release, 'linux', 'arm64')).toBeUndefined()
 		expect(installerFor(release, 'win32', 'arm64').name).toBe('Content-Tracker-1.2.0-win-x64.exe')
-		expect(installerFor(release, 'linux', 'x64')).toBeUndefined()
 	})
 
 	it('says when it could not find out', async () => {

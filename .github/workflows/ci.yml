@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -19,4 +19,13 @@ jobs:
           node-version: '24.x'
           cache: npm
       - run: npm ci
-      - run: npm run check
+      - if: runner.os != 'Linux'
+        run: npm run check
+      # Linux has no screen or keyring of its own on GitHub's runners: the app's tests need
+      # both, the keyring as they check sign ins survive the app being opened again
+      - if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -q && sudo apt-get install -yq xvfb gnome-keyring dbus-x11
+          dbus-run-session -- sh -c 'echo "" | gnome-keyring-daemon --unlock --components=secrets >/dev/null && xvfb-run -a npm run check'
+        env:
+          ELECTRON_DISABLE_SANDBOX: 1

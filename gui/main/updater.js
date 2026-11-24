@@ -10,7 +10,7 @@ import { checkForUpdates, installerFor, isNewer, latestRelease } from '../../cor
 const run = promisify(execFile)
 
 const EVERY = 6 * 60 * 60 * 1000
-const INSTALLER = /^Content-Tracker-[\d.]+-(mac|win)-\w+\.(dmg|exe)$/
+const INSTALLER = /^Content-Tracker-[\d.]+-(mac|win|linux)-\w+\.(dmg|exe|AppImage)$/
 
 /**
  * Looks for a newer release on GitHub, and installs it when asked: on a Mac by
@@ -81,6 +81,8 @@ export class Updater extends EventEmitter {
 				throw new Error('Only the built app can update itself.')
 			if(process.platform == 'darwin')
 				await this.#swapMacApp(file, folder)
+			else if(process.platform == 'linux')
+				await this.#swapAppImage(file, folder)
 			else
 				this.#runInstaller(file)
 		}
@@ -161,6 +163,29 @@ export class Updater extends EventEmitter {
 			rm -rf "$4"
 		`
 		spawn('/bin/sh', ['-c', swap, 'update', String(process.pid), replacement, current, folder], { detached: true, stdio: 'ignore' }).unref()
+		app.quit()
+	}
+
+	async #swapAppImage(file, folder) {
+		// the AppImage it was opened from, which the new one takes the place of
+		const current = process.env.APPIMAGE
+		const inPlace = current && await fs.access(path.dirname(current), constants.W_OK).then(() => true, () => false)
+		await fs.chmod(file, 0o755)
+		if(!inPlace) {
+			// somewhere it can't write, so the new one's shown for it to be put there by hand
+			shell.showItemInFolder(file)
+			this.#set({ progress: null })
+			return
+		}
+
+		// once this has quit: the old one's kept until the new one's in, and put back if it couldn't be
+		const swap = `
+			while kill -0 "$1" 2>/dev/null; do sleep 0.2; done
+			if mv "$3" "$3.old" && cp "$2" "$3" && chmod 755 "$3"; then rm -f "$3.old"; else rm -f "$3"; mv "$3.old" "$3"; fi
+			"$3" >/dev/null 2>&1 &
+			rm -rf "$4"
+		`
+		spawn('/bin/sh', ['-c', swap, 'update', String(process.pid), file, current, folder], { detached: true, stdio: 'ignore' }).unref()
 		app.quit()
 	}
 

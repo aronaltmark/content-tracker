@@ -69,7 +69,7 @@ npm run verify   # lint, unit tests and the build
 npm run check    # all of that, then every end-to-end test
 ```
 
-Run `npm run check` before opening a pull request - the same runs on Mac and Windows for every pull request, and has to pass. Add tests for what you change: the unit tests sit beside the code (`*.test.js`), and anything the app or command line does end to end goes in `e2e/`.
+Run `npm run check` before opening a pull request - the same runs on Mac, Windows and Linux for every pull request, and has to pass. Add tests for what you change: the unit tests sit beside the code (`*.test.js`), and anything the app or command line does end to end goes in `e2e/`.
 
 If you change what a config can hold, edit `core/config-schema.js` and run `npm run schema`. If you change the app's Help, edit `docs/help.md` and run `npm run readme`.
 
