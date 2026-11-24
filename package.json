@@ -1,7 +1,7 @@
 {
   "name": "@garethnunns/content-tracker",
   "productName": "Content Tracker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Track the content in your folders on Airtable or Google Sheets",
   "type": "module",
   "main": "out/main/index.js",
@@ -19,7 +19,7 @@
     "!**/*.test.js"
   ],
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "electron-vite dev",

@@ -47,7 +47,7 @@ npx @garethnunns/content-tracker
 
 Then you just need to [edit the `config.json` file](#config-file) that was created where the command was executed and re-run with the [config command line option `tracker -c`](#config-option--c---config-path).
 
-_Will require Node 20.19 or newer to be installed, if on Mac probably install with Homebrew:_
+_Will require Node 22.12 or newer to be installed, if on Mac probably install with Homebrew:_
 ```sh
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 brew install node
