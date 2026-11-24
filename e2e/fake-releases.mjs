@@ -11,7 +11,7 @@ import { createServer } from 'http'
 export async function fakeReleases({ version = '99.0.0', tampered = false } = {}) {
 	const installer = Buffer.from('not really an installer')
 	const digest = 'sha256:' + createHash('sha256').update(tampered ? 'something else' : installer).digest('hex')
-	const names = ['mac-arm64.dmg', 'mac-x64.dmg', 'win-x64.exe'].map(end => `Content-Tracker-${version}-${end}`)
+	const names = ['mac-arm64.dmg', 'mac-x64.dmg', 'win-x64.exe', 'linux-x64.AppImage'].map(end => `Content-Tracker-${version}-${end}`)
 	const downloads = []
 
 	const send = (response, status, body) => {

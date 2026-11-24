@@ -29,3 +29,5 @@ jobs:
           dbus-run-session -- sh -c 'echo "" | gnome-keyring-daemon --unlock --components=secrets >/dev/null && xvfb-run -a npm run check'
         env:
           ELECTRON_DISABLE_SANDBOX: 1
+          # how Electron knows there's a keyring to keep sign ins in, rather than plain text
+          XDG_CURRENT_DESKTOP: GNOME

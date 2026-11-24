@@ -92,7 +92,7 @@ test('sets up, tries a dry run, then updates the tracker', async () => {
 	expect(airtable.tables).toEqual([])
 
 	await page.getByRole('button', { name: 'Run once' }).click()
-	await expect(page.getByTestId('result')).toContainText('Last run')
+	await expect(page.getByTestId('result')).toContainText('Last run at')
 	expect(airtable.records('Files')[0].fields._path).toBe('/shots/notes.txt')
 	await expect(page.getByTestId('status')).toHaveText('Stopped')
 })
@@ -189,7 +189,7 @@ test('keeps the token out of the page and the settings file', async () => {
 
 	// and it's still there next time
 	await page.getByRole('button', { name: 'Run once' }).click()
-	await expect(page.getByTestId('result')).toContainText('Last run')
+	await expect(page.getByTestId('result')).toContainText('Last run at')
 })
 
 test('gives the page no way out', async () => {
@@ -228,7 +228,7 @@ test('imports a config from an older version, with its old setting names', async
 
 	await page.getByRole('button', { name: 'Activity' }).click()
 	await page.getByRole('button', { name: 'Run once' }).click()
-	await expect(page.getByTestId('result')).toContainText('Last run')
+	await expect(page.getByTestId('result')).toContainText('Last run at')
 	expect(airtable.records('Files')[0].fields._path).toBe('/shots/notes.txt')
 })
 
@@ -293,7 +293,7 @@ test('signs in with Airtable, chooses a base and tracks in it', async () => {
 
 	await page.getByRole('button', { name: 'Activity' }).click()
 	await page.getByRole('button', { name: 'Run once' }).click()
-	await expect(page.getByTestId('result')).toContainText('Last run')
+	await expect(page.getByTestId('result')).toContainText('Last run at')
 	expect(airtable.records('Files')[0].fields._path).toBe('/shots/notes.txt')
 })
 
@@ -318,7 +318,7 @@ test('signs in with Google and tracks in a spreadsheet from its link, still sign
 	// and it refreshes the sign in once it's run out
 	oauth.expire()
 	await page.getByRole('button', { name: 'Run once' }).click()
-	await expect(page.getByTestId('result')).toContainText('Last run')
+	await expect(page.getByTestId('result')).toContainText('Last run at')
 	expect(oauth.refreshes).toBe(1)
 	expect(oauth.sheets.rows('Files').map(row => row[0])).toEqual(['_path', '/shots/notes.txt'])
 })
@@ -355,7 +355,7 @@ test('clears the media cache', async () => {
 	await setUp()
 	await page.getByRole('button', { name: 'Activity' }).click()
 	await page.getByRole('button', { name: 'Run once' }).click()
-	await expect(page.getByTestId('result')).toContainText('Last run')
+	await expect(page.getByTestId('result')).toContainText('Last run at')
 
 	// it's kept in the user's cache folder, which the tests put under root: on Windows in a Cache folder of its own
 	const caches = async () => (await fs.readdir(root, { recursive: true })).filter(file => /content-tracker[\\/](Cache[\\/])?[0-9a-f]{16}\.json$/.test(file))
@@ -398,7 +398,7 @@ test('lists what a dry run would do, and excludes from the list', async () => {
 	await fs.writeFile(path.join(root, 'media/shots/clip.mov'), 'not really a clip')
 	await page.getByRole('button', { name: 'Activity' }).click()
 	await page.getByRole('button', { name: 'Run once' }).click()
-	await expect(page.getByTestId('result')).toContainText('Last run')
+	await expect(page.getByTestId('result')).toContainText('Last run at')
 	await fs.writeFile(path.join(root, 'media/shots/notes.txt'), 'changed')
 	await fs.writeFile(path.join(root, 'media/shots/new.txt'), 'new')
 
@@ -433,7 +433,7 @@ test('tracks only the files, with folders turned off', async () => {
 	await saved()
 	await page.getByRole('button', { name: 'Activity' }).click()
 	await page.getByRole('button', { name: 'Run once' }).click()
-	await expect(page.getByTestId('result')).toContainText('Last run')
+	await expect(page.getByTestId('result')).toContainText('Last run at')
 	expect(airtable.tables.map(table => table.name)).toEqual(['Files'])
 	expect(airtable.records('Files')[0].fields).not.toHaveProperty('_parent')
 })
@@ -443,7 +443,7 @@ test('sorts what it tracked, and a click opens the menu', async () => {
 	await fs.writeFile(path.join(root, 'media/shots/big.mov'), 'x'.repeat(5000))
 	await page.getByRole('button', { name: 'Activity' }).click()
 	await page.getByRole('button', { name: 'Run once' }).click()
-	await expect(page.getByTestId('result')).toContainText('Last run')
+	await expect(page.getByTestId('result')).toContainText('Last run at')
 	await page.getByRole('button', { name: 'Tracked' }).click()
 
 	const paths = () => page.getByTestId('tracked').locator('td.path').allTextContents()
