@@ -44,7 +44,7 @@ Signing in with Google needs the app's client secret, which isn't in git: set `G
 | `npm run dist:mac` | Builds the app for both kinds of Mac, Apple Silicon and Intel. |
 | `npm run schema` | Writes `core/config.schema.json`, which editors use to help write a config, from `core/config-schema.js`. Run it after changing that. |
 | `npm run readme` | Puts `docs/help.md`, the app's Help, into the README's App section. Run it after changing that. |
-| `npm run screenshots` | Takes the pictures in `docs/screenshots`: each of the app's tabs in a Mac window, its menu in the menu bar, and mock-ups of the tables in Google Sheets and Airtable. The app's the real thing, against pretend Airtable and Google. Every release takes them again and attaches them as `screenshots.zip`. |
+| `npm run screenshots` | Takes the pictures in `docs/screenshots`: each of the app's tabs in a Mac window, its menu in the menu bar, and mock-ups of the tables in Google Sheets and Airtable. The app's the real thing, against pretend Airtable and Google. They're taken again for each release, in its own commit, and the store shows them from there. |
 | `npm run icons` | Makes the PNGs from the icon, `build/icon.svg`, and the menu bar's, `build/tray.svg`. Run it after changing either. |
 
 Windows has to be built on Windows, as ffprobe is a different program on each, and a build stops if it hasn't got the right one.
