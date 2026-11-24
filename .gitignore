@@ -132,3 +132,17 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+# Electron builds, and what the app tests leave behind
+out/
+release/
+test-results/
+playwright-report/
+
+# Claude Code's own, per person
+.claude/settings.local.json
+
+# the Mac's folder settings
+.DS_Store
+
+# Google's client secret, written by npm install (scripts/oauth-secret.mjs)
+core/oauth-secret.js
