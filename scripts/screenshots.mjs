@@ -72,7 +72,8 @@ async function draw(app, work, name, html, { width, height }) {
 }
 
 // a Mac window round a picture, with its title bar, traffic lights and shadow
-const MARGIN = { side: 60, top: 40, bottom: 90 }
+// room for the whole of the shadow, which would otherwise stop in a hard edge
+const MARGIN = { side: 110, top: 80, bottom: 150 }
 const TITLE_BAR = 28
 
 function macWindow(title, content, width, height) {

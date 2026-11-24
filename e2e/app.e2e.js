@@ -357,8 +357,8 @@ test('clears the media cache', async () => {
 	await page.getByRole('button', { name: 'Run once' }).click()
 	await expect(page.getByTestId('result')).toContainText('Last run')
 
-	// it's kept in the user's cache folder, which the tests put under root
-	const caches = async () => (await fs.readdir(root, { recursive: true })).filter(file => /content-tracker[\\/][0-9a-f]{16}\.json$/.test(file))
+	// it's kept in the user's cache folder, which the tests put under root: on Windows in a Cache folder of its own
+	const caches = async () => (await fs.readdir(root, { recursive: true })).filter(file => /content-tracker[\\/](Cache[\\/])?[0-9a-f]{16}\.json$/.test(file))
 	expect(await caches()).toHaveLength(1)
 
 	await page.getByRole('button', { name: 'Settings' }).click()
