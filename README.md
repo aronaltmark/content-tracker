@@ -1,28 +1,78 @@
-# CLI Content Tracker to AirTable
+# Content Tracker
 
-This project came about as a means to track video content on concert shows, but is written generically. It recursively scans folders, which can be mapped network drives or streamed cloud storage like Dropbox, Drive, LucidLink or Suite and stores a list of the files & folders on AirTable.
+<img src="build/icon.svg" alt="Content Tracker logo" width="80" align="left">
+
+### Track the content in your folders on Airtable or Google Sheets
+[![Checks](https://github.com/garethnunns/content-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/garethnunns/content-tracker/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/garethnunns/content-tracker)](https://github.com/garethnunns/content-tracker/releases/latest) [![Downloads](https://img.shields.io/github/downloads/garethnunns/content-tracker/total)](https://github.com/garethnunns/content-tracker/releases) [![npm](https://img.shields.io/npm/v/@garethnunns/content-tracker)](https://www.npmjs.com/package/@garethnunns/content-tracker) [![App](https://img.shields.io/badge/app-Mac%20%7C%20Windows-0a6cdf)](#app) [![License: GPL-3.0](https://img.shields.io/github/license/garethnunns/content-tracker)](LICENSE)
+
+<br clear="left">
+
+<img src="docs/screenshots/tracked.png" alt="The app's Tracked tab after a dry run: new files in green, modified in orange, deleted in red, unchanged in grey" width="720">
+
+This project came about as a means to track video content on concert shows, but is written generically. It recursively scans folders, which can be mapped network drives or streamed cloud storage like Dropbox, Drive, LucidLink or Suite, and keeps a list of the files & folders on Airtable or Google Sheets.
+
+There's a command line version and an app for Mac & Windows, which do the same thing.
 
 ## Quick Start
 
+### Command line
+
 ```sh
-npx @garethnunns/cli-content-tracker
+npx @garethnunns/content-tracker
 ```
 
-Then you just need to [edit the `config.json` file](#config-file) that was created where the command was executed and re-run with the [config command line option `tracker -c`](#config-option--c---config-).
+Then you just need to [edit the `config.json` file](#config-file) that was created where the command was executed and re-run with the [config command line option `tracker -c`](#config-option--c---config-path).
 
-_Will require Node to be installed, if on Mac probably install with Homebrew:_
+_Will require Node 20.19 or newer to be installed, if on Mac probably install with Homebrew:_
 ```sh
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 brew install node
 ```
 
-## AirTable Setup
+It says when there's a newer version, and how to get it: `npx @garethnunns/content-tracker@latest`, or `npm install -g @garethnunns/content-tracker` if you installed it. Set `CONTENT_TRACKER_NO_UPDATE_CHECK=1` to stop it looking.
 
-You can duplicate [this base](https://airtable.com/appPF3qIAsOaGMz9z/shr6Hx4YgXryKvy3e) or create your own detailed below. See the section on [configuring the settings for AirTable](#configsettingsairtable) on how to link this to the script.
+### App
 
-### Manual Base Creation
+Download the latest version for Mac (Apple Silicon or Intel) or Windows from the [releases page](https://github.com/garethnunns/content-tracker/releases).
 
-You'll need a base with the two following tables for folders & files.
+<!-- docs/help.md, the app's Help: change it there, then npm run readme -->
+
+1. Under **Settings**, add the folders to track, then under **Tables** choose Airtable or Google Sheets. Sign in, and choose the base or give the spreadsheet's link. Settings save as you change them.
+2. Try a **Dry run** to see what it would change, without changing anything.
+3. **Run once** updates the tracker, and **Start watching** keeps it up to date.
+
+**Tracked** lists what was found in the last run, with its size, dates and media details - click a heading to sort by it, including when each was first found. After a dry run it's coloured by what it would do: green for new, orange for modified, red for deleted, grey for unchanged. Click anything to stop tracking it by its name, folder or extension.
+
+You can close the window once it's configured and it will carry on in the menu bar (or the tray, on Windows), where you can run it once, start watching or open the settings. Tick **Open at Login** there to have it start with your computer.
+
+More on [setting up Airtable](#airtable-setup) and [Google Sheets](#google-sheets-setup), the [fields it fills in](#tables), and [which folders and files are tracked](#configsettingsfilesrules).
+
+<!-- end of docs/help.md -->
+
+If you already have a config file from the command line, **Import settings** in **Settings** brings it across, and the token moves into your keychain. **Export settings** saves them as a config file for the command line or another computer, without your token or sign ins. If the app was watching when it was quit, it carries on when it's next opened.
+
+When there's a newer version, the window and the menu say so: **Update and restart** downloads it from GitHub, checks it's what the release says it is, installs it and opens it again. On a Mac that works once it's in Applications; opened from anywhere else, it opens the new version for you to drag in.
+
+_The app isn't signed yet, so the first time you open it on a Mac right-click it and choose Open, and on Windows choose More info then Run anyway._
+
+<details>
+<summary><h2 id="airtable-setup">Airtable Setup</h2></summary>
+
+
+Make a base, then see the section on [configuring the settings for Airtable](#configsettingsairtable) on how to link this to the script. **The tables and fields it needs are created the first time it runs**, or you can [duplicate this base](https://airtable.com/appPF3qIAsOaGMz9z/shr6Hx4YgXryKvy3e).
+
+The easiest way in is to sign in with Airtable: **Sign in with Airtable** in the app, or `tracker login airtable` on the command line, which opens your browser. Airtable asks which bases it can use, and in the app **Choose** then lists them. The sign in is kept in your keychain by the app, and in a file only you can read by the command line (`~/.config/content-tracker/sign-ins.json`, or `%APPDATA%\content-tracker\sign-ins.json` on Windows). `tracker logout airtable` forgets it.
+
+Or use a token, from the [Airtable Tokens page](https://airtable.com/create/tokens), with access to your base and these scopes:
+
+- `data.records:read` & `data.records:write`
+- `schema.bases:read` & `schema.bases:write` - for creating the tables. Without these it warns you and carries on with the tables you already have.
+
+If you'd rather not keep the token in the config file, leave it blank and set `AIRTABLE_API_KEY` instead, which takes priority.
+
+### Tables
+
+Fields which are missing are added, and it won't touch any others, so you can add your own alongside them.
 
 #### Folders Table
 
@@ -31,6 +81,7 @@ You'll need a base with the two following tables for folders & files.
 | `_path`     | Unix path to this folder in the project     | Single line text
 | `_fullPath` | Will store the full path of the folder      | Single line text
 | `_size`     | Size of the folder in bytes                 | Number - 0 decimal places
+| `_sizeText` | The size as the Finder shows it, like `1.84 GB` | Single line text
 | `_ctime`    | Creation time of the folder                 | Date - include time, **Use same time for all collaborators**
 | `_mtime`    | Last modified time of the folder            | Date - include time, **Use same time for all collaborators**
 | `_items`    | Number of items in the folder               | Number - 0 decimal places
@@ -38,20 +89,21 @@ You'll need a base with the two following tables for folders & files.
 
 #### Files Table
 
-Only use this smaller table when the [mediaMetadata setting](#configsettingsfilesmediametadata) is disabled.
+Only this smaller table is used when the [mediaMetadata setting](#configsettingsfilesmediametadata) is disabled.
 
 | Field       | Description                                 | Type
 | ---         | ---                                         | ---
-| `_path`     | Unix path to this folder in the project     | Single line text
-| `_fullPath` | Will store the full path of the folder      | Single line text
+| `_path`     | Unix path to this file in the project       | Single line text
+| `_fullPath` | Will store the full path of the file        | Single line text
 | `_size`     | Size of the file in bytes                   | Number - 0 decimal places
+| `_sizeText` | The size as the Finder shows it, like `1.84 GB` | Single line text
 | `_ctime`    | Creation time of the file                   | Date - include time, **Use same time for all collaborators**
 | `_mtime`    | Last modified time of the file              | Date - include time, **Use same time for all collaborators**
 | `_parent`   | Parent folder of this file                  | Link to record - folders table
 
-### File Table with Metadata
+#### File Table with Metadata
 
-All the fields of the in the [files table](#files-table) plus:
+All the fields of the [files table](#files-table) plus:
 
 | Field               | Description                                 | Type
 | ---                 | ---                                         | ---
@@ -71,41 +123,74 @@ All the fields of the in the [files table](#files-table) plus:
 | `_audioChannels`    | Number of channels of audio                 | Number - 0 decimal places
 | `_audioBitRate`     | Bit rate of the audio (b)                   | Number - 0 decimal places
 
-
 ### Field Notes
 
 The fields are named like this so it's clear which fields are entered via the tracker, you can easily do other fields that reference these values, but do not edit the values in these columns or they will just get overwritten/deleted.
 
-If all the records are being updated every time, it is likely because of a mismatch on the created/modified time - ensure the **Use same time for all collaborators** option is selected on these fields and you can try setting the timezone to match the computer which is running the script. _Despite sending them as UTC strings, AirTable is a bit funky on how it handles the dates._
+If all the records are being updated every time, it is likely because of a mismatch on the created/modified time - ensure the **Use same time for all collaborators** option is selected on these fields and you can try setting the timezone to match the computer which is running the script. _Tables created by the tracker are set up this way already._
 
-## Command Line Options
+</details>
+
+<details>
+<summary><h2 id="google-sheets-setup">Google Sheets Setup</h2></summary>
+
+
+Sign in with Google: **Sign in with Google** in the app, or `tracker login google` on the command line, which opens your browser. Then give it the spreadsheet's link - any spreadsheet you can edit. The sign in is kept as Airtable's is, above, and `tracker logout google` forgets it.
+
+_Until Google has checked the app, it says so as you sign in: choose **Advanced**, then **Go to Content Tracker**._
+
+### With a service account
+
+For a computer no one signs in on, like a server running it from cron, use a service account instead: a robot Google account that you share the spreadsheet with.
+
+1. In the [Google Cloud console](https://console.cloud.google.com/), create a project and enable the **Google Sheets API**.
+2. Under **IAM & Admin > Service Accounts**, create a service account, then under its **Keys** tab add a JSON key. Keep this file somewhere safe - anyone with it can act as that account.
+3. Make a spreadsheet and share it with the service account's email address (`...@...iam.gserviceaccount.com`) as an Editor.
+4. Fill in the [Google Sheets settings](#configsettingsgooglesheets).
+
+**The sheets and their header rows are created the first time it runs.** It has the same columns as the [Airtable tables](#tables), apart from `_parent` holding the parent folder's `_path`, as Sheets has no links.
+
+You can add columns of your own, in any position, and sort or filter however you like: rows are matched by `_path` and only the tracker's own columns are written to. Removing a file removes its whole row, your columns included. Everything is written as plain values, so nothing a file is named can run as a formula.
+
+_A spreadsheet can only hold 10 million cells, and it gets slow well before that - each file takes 7 cells, or 22 with media metadata. If you're tracking hundreds of thousands of files, use Airtable._
+
+</details>
+
+<details>
+<summary><h2 id="command-line-options">Command Line Options</h2></summary>
+
 
 Get the latest options by running `tracker -h` which will return something like:
 
 ```
 Usage: tracker [options]
 
-CLI File Content Tracking
+Track the content in your folders on Airtable or Google Sheets
 
 Options:
   -V, --version          output the version number
   -c, --config <path>    config file path (if none specified template will be created)
-  -d, --dry-run          will do everything apart from updating AirTable
+  -d, --dry-run          will do everything apart from updating the tracker
   -l, --logging <level>  set the logging level
-  -nd, --no-delete       never remove records from AirTable
+  -nc, --no-confirm      never ask for confirmation before making large changes
+  -nd, --no-delete       never remove records
   -w, --wipe-cache       clear the metadata cache
   -h, --help             display help for command
 ```
 
+It's installed as both `tracker` and `content-tracker`. It exits with an error code if something went wrong, so a cron job can tell.
+
+`tracker login google` or `tracker login airtable` signs in, in your browser ([Airtable](#airtable-setup), [Google Sheets](#google-sheets-setup)), and `tracker logout google` or `tracker logout airtable` forgets it. It prints the link too, in case the browser doesn't open (`BROWSER=none` stops it trying). The browser has to be on the same computer, as that's where the sign in comes back to - on one without, use a token or a service account.
+
 ### Config Option: -c, --config <path>
 
-When you run `tracker` for the first time without a path option it will generate the `config.json` file which you will then need to update. Once updated run the command again with `tracker -c config.json`, for more info on the contents of the config file, check the [section on config files](#config-file).
+When you run `tracker` for the first time without a path option it will generate the `config.json` file which you will then need to update (it never overwrites one that's already there). Once updated run the command again with `tracker -c config.json`, for more info on the contents of the config file, check the [section on config files](#config-file).
 
 ### Dry-run Option: -d, --dry-run
 
-Inherently, it's nice to know this isn't going to wreak havoc on your AirTable, so if you run `tracker -c config.json -d` it will show you what it's going to do but stop short of modifying the AirTable. It will still run on at the [frequency you specify](#configsettingsfilesfrequency). You will need to run with a (#logging-option--l---logging) logging level of verbose to see all the details.
+Inherently, it's nice to know this isn't going to wreak havoc on your tracker, so if you run `tracker -c config.json -d` it will show you what it's going to do but stop short of modifying anything, including creating tables. It will still run on at the [frequency you specify](#configsettingsfilesfrequency). You will need to run with a [logging level](#logging-option--l---logging-level) of debug to see all the details.
 
-### Logging Option: -l, --logging
+### Logging Option: -l, --logging <level>
 
 Specify one of the following levels of logging:
 
@@ -119,26 +204,32 @@ Specify one of the following levels of logging:
 
 ### No Confirm Option: -nc, --no-confirm
 
-By default the script will stop and confirm before it removes more than 10% of the table (if you don't respond in under a minute then it will assume not), but when run with `-nc` it will always delete the records in AirTable.
+By default the script will stop and confirm before it removes more than 10% of the table (if you don't respond in under a minute, or there's no one to ask, as with cron, then it will assume not), but when run with `-nc` it will always delete the records. To never be asked, set [`removing.confirm`](#configsettingsremoving) to `false`.
 
 ### No Delete Option: -nd, --no-delete
 
-This will perform still insert and update records in AirTable, however will not remove them if they have been deleted in the local file system - handy if you are freeing up space on your local disk by deleting media but still want the reference in AirTable.
+This will still insert and update records, however will not remove them if they have been deleted in the local file system - handy if you are freeing up space on your local disk by deleting media but still want the reference in your tracker. To always keep them, set [`removing.enabled`](#configsettingsremoving) to `false`.
 
 ### Wipe Cache: -w, --wipe-cache
 
-There's a local cache built up in `./db` of the metadata of files so they don't have to keep getting queried via FFMpeg which is a tad computationally expensive, but if you need to rescan all files run with this option. Files will already be automatically scanned if they change size or the modified time changed.
+There's a cache of the metadata of files so they don't have to keep getting queried via ffprobe which is a tad computationally expensive, but if you need to rescan all files run with this option. Files will already be automatically scanned if they change size or the modified time changed. It's kept in your user cache folder, one per set of folders. In the app it's **Clear media metadata cache** in **Settings**.
 
-# Config File
+</details>
 
-Create the default config as [described above](#config-option--c---config-), which will generate something like this:
+<details>
+<summary><h2 id="config-file">Config File</h2></summary>
+
+
+Create the default config as [described above](#config-option--c---config-path), which will generate something like this:
 ```json
 {
+  "$schema": "https://unpkg.com/@garethnunns/content-tracker/core/config.schema.json",
   "settings": {
+    "target": "airtable",
     "files": {
-      "rootPath": "/Users/user/Documents/cli-content-tracker",
+      "rootPath": "/Users/user/Documents/content",
       "dirs": [
-        "/Users/user/Documents/cli-content-tracker"
+        "/Users/user/Documents/content"
       ],
       "frequency": 30,
       "rules": {
@@ -149,28 +240,54 @@ Create the default config as [described above](#config-option--c---config-), whi
         "files": {
           "includes": [],
           "excludes": [
-            "/\\.DS_Store$/"
+            ".DS_Store"
           ]
         }
       },
       "mediaMetadata": true,
       "limitToFirstFile": false,
-      "concurrency": 100
+      "trackFolders": true,
+      "concurrency": 10
+    },
+    "removing": {
+      "enabled": true,
+      "confirm": true
     },
     "airtable": {
-      "api": "",
+      "token": "",
       "base": "",
-      "foldersID": "",
-      "filesID": "",
-      "view": "API"
+      "foldersTable": "Folders",
+      "filesTable": "Files",
+      "view": ""
+    },
+    "googleSheets": {
+      "spreadsheetId": "",
+      "credentials": "",
+      "foldersSheet": "Folders",
+      "filesSheet": "Files"
     }
   }
 }
 ```
 
-In general, leave all the parameters in the JSON file, there is some error handling if they're not present but probably for the best to leave everything in there.
+Only the section for your `target` needs filling in, and anything left out is what's shown above, so this is all it really needs:
+
+```json
+{
+  "settings": {
+    "files": { "dirs": ["/Users/user/Documents/content"] },
+    "airtable": { "base": "app**************" }
+  }
+}
+```
+
+The `$schema` line lets editors like VS Code suggest and explain each setting as you type. If anything's wrong with the config, including a setting it doesn't know, it lists everything it found when you run it.
 
 ## config.settings
+
+### config.settings.target
+
+Where the files are tracked, either `airtable` or `googleSheets`, _it's `airtable` if you leave it out._
 
 ### config.settings.files
 
@@ -185,10 +302,12 @@ In an effort to make the script less dependent on exactly where the files are st
 
 #### config.settings.files.dirs
 
-Array of irectory to recursively search through, _e.g._
+Array of directories to recursively search through, _e.g._
 ```json
 "dirs": [ "/Volumes/Suite/Project/Item 1", "/Volumes/Suite/Project/Item 2" ]
 ```
+
+If any of these or anything inside them can't be read, for example a drive has been unmounted, nothing is removed from the tracker that time, as everything on it would otherwise look like it's been deleted. If there's a folder it can never read, like `.Trashes` on a drive, add it to the [`dirs` excludes](#configsettingsfilesrules) (`".Trashes"`) and it won't hold things up.
 
 #### config.settings.files.frequency
 
@@ -201,27 +320,33 @@ You can also set this to `0` and the script will only run once - this is intende
 
 #### config.settings.files.rules
 
-So I'll be honest, this is the only slightly faffy bit... but it definitely beats entering them as command-line arguments that was my first plan. The thought process here is you're filtering the paths of the files and folders will get included in the tables which are pushed to AirTable.
+Which folders and files are tracked: `dirs` decides which folders get a record, and `files` which files do. Each has `includes`, where anything has to match one of them to be tracked (empty tracks everything), and `excludes`, where anything that matches one isn't.
 
-Whatever you specify in these fields the script will still have to traverse all of the folders in the directory - if you have specified a pattern like `/.*\/Delivery\/.*/` which would match any folder with `/Delivery/` in the path, by the nature of the task you're still going to have to search through every folder.
+They're matched against the path as it's tracked, like `/05 Delivery/shot_v001.tif`, so the same rules work wherever the folders are and on Mac & Windows. It still looks through every folder whatever the rules say, so a file in a folder that isn't tracked can still be.
 
-Now the bit that makes it faffy is you have to stringify JS regex patterns, which usually just means escaping the slashes - a handy one to make use of [the dry run option](#dry-run-option--d---dry-run). __Note you're matching the entire path of the file/folder in both `dirs` & `files`__.
+Each rule is a glob, or a regular expression for anything a glob can't do:
 
-_For example, in the example below we're limiting the folders which are stored on AirTable to only be ones that include `/05 Delivery/` somewhere in the path, then only including specific image sequence TIFFs:_
+| Rule | Matches |
+| --- | --- |
+| `*.mov` | Any `.mov` file, in any folder - without a `/`, a glob matches the name anywhere, as in a `.gitignore` |
+| `.DS_Store` | The Mac's `.DS_Store` files, wherever they are |
+| `05 Delivery/**` | Everything in the `05 Delivery` folder at the top |
+| `**/05 Delivery/**` | Everything in any `05 Delivery` folder |
+| `**/renders/*.exr` | `.exr` files directly in any `renders` folder |
+| `/_v\\d{3}\\.tif$/i` | A regular expression, written between `/`s: here `.tif` files ending in a version number like `_v012`, in any case. Its `\` need doubling in JSON, but a `/` inside it doesn't need escaping |
+
+Globs are case sensitive, and a rule starting with `/` is always a regular expression, so a glob never does. Try them with [the dry run option](#dry-run-option--d---dry-run).
+
+_For example, to only track the folders in any `05 Delivery` folder, and only the TIFFs with a version number or the first of a sequence:_
 
 ```json
 "rules": {
   "dirs": {
-    "includes": [
-      "/.*\/05 Delivery\/.*/"
-    ],
+    "includes": ["**/05 Delivery/**"],
     "excludes": []
   },
   "files": {
-    "includes": [
-      "/[_.]v\\d{2,3}\\.tif/",
-      "/[_.]0{4,5}\\.tif/"
-    ],
+    "includes": ["/[_.]v\\d{2,3}\\.tif$/", "/[_.]0{4,5}\\.tif$/"],
     "excludes": []
   }
 }
@@ -229,7 +354,7 @@ _For example, in the example below we're limiting the folders which are stored o
 
 #### config.settings.files.mediaMetadata
 
-Whether you want to get all the metadata for the media, which will scrape all the fields in the (files with metadata table)[#file-table-with-metadata], _e.g._
+Whether you want to get all the metadata for the media, which will scrape all the fields in the [files with metadata table](#file-table-with-metadata), _e.g._
 
 ```json
 "mediaMetadata": true
@@ -247,7 +372,7 @@ This works in conjunction with the [file rules](#configsettingsfilesrules) but l
     },
     "files": {
       "includes": [
-        "/05_Delivery/.*\\.tif/"
+        "**/05_Delivery/**/*.tif"
       ],
       "excludes": []
     }
@@ -256,60 +381,109 @@ This works in conjunction with the [file rules](#configsettingsfilesrules) but l
   "limitToFirstFile": true
 ```
 
+#### config.settings.files.trackFolders
+
+Whether the folders are tracked too, in [a table of their own](#folders-table) that each file links to with `_parent`. Turn it off to only track the files, with no folders table and no `_parent` field:
+
+```json
+"trackFolders": false
+```
+
 #### config.settings.files.concurrency
 
-This limits the number of concurrent file operations, introduced to throttle the load on Suite. If you have a computer with enough RAM and the files are static then this value can be larger, however if it's a weak computer and the files are being streamed you might want to limit this to < 10, _e.g._
+This limits the number of concurrent file operations across the whole scan, introduced to throttle the load on Suite. If you have a computer with enough RAM and the files are static then this value can be larger, however if it's a weak computer and the files are being streamed you might want to limit this to < 10, _e.g._
 
 ```json
 "concurrency": 1
 ```
 
+### config.settings.removing
+
+What happens to the records of files and folders that have gone. `enabled` removes them, and turned off keeps them, like [`-nd`](#no-delete-option--nd---no-delete) every time. `confirm` asks before removing more than 10% of a table, and turned off doesn't, like [`-nc`](#no-confirm-option--nc---no-confirm) every time. Both are on if you leave them out, and the options can only turn them off for a run, _e.g. to keep everything that's been tracked:_
+
+```json
+"removing": {
+  "enabled": false
+}
+```
+
+Nothing is ever removed in a run where part of a folder couldn't be read, whatever these say.
+
 ### config.settings.airtable
 
-Once you've [setup your AirTable](#airtable-setup), please configure the following settings:
+Once you've [setup your Airtable](#airtable-setup), please configure the following settings:
 
-#### config.settings.airtable.api
+#### config.settings.airtable.token
 
-Get your API key from the [AirTable Tokens page](https://airtable.com/create/tokens), it will need the following permissions:
-- data.records:read
-- data.records:write
- 
- Plus access to the workspace where your base is located.
+Your [personal access token](#airtable-setup), if you haven't signed in. You can leave this blank and set `AIRTABLE_API_KEY` instead, and either is used over a sign in. If it's in the file, make sure only you can read it (`chmod 600 config.json`) and don't commit it - the script warns you if others can.
 
- #### config.settings.airtable.base
+#### config.settings.airtable.base
 
- You'll need to go to the [API page for your base](https://airtable.com/developers/web/api/introduction) and get the base ID and enter this here, _e.g._
+You'll need to go to the [API page for your base](https://airtable.com/developers/web/api/introduction) and get the base ID and enter this here, _e.g._
 
- ```json
+```json
 "base": "app**************"
- ```
+```
 
-#### config.settings.airtable.foldersID / filesID
+#### config.settings.airtable.foldersTable / filesTable
 
-  Technically you can just put the folders table name here, but on [the same page as the base ID](https://airtable.com/developers/web/api/introduction) you can get the IDs for the tables, then if the table names get updated later it won't affect the script, _e.g._
+These can be table names or IDs. With a name, the table is created if it doesn't exist. On [the same page as the base ID](https://airtable.com/developers/web/api/introduction) you can get the IDs for the tables, then if the table names get updated later it won't affect the script, _e.g._
 
-  ```json
-"foldersID": "tbl**************",
-"filesID": "tbl**************"
-  ```
+```json
+"foldersTable": "tbl**************",
+"filesTable": "tbl**************"
+```
 
 #### config.settings.airtable.view
 
 This is the view the script compares the local file list against - e.g. you could technically store other items in the table and filter them out in this view; you could have multiple scripts all writing into the same table and filter them out per view _(this might be better achieved by writing to multiple tables)._
 
-This defaults to a view called `API`:
+Leave it blank to use the whole table. Airtable can't create views for us, so if you set this you'll need to add the view yourself. It stops if the view isn't there, rather than comparing against the whole table and removing whatever it doesn't recognise.
 
 ```json
 "view": "API"
 ```
 
-## Development
+### config.settings.googleSheets
+
+Once you've [setup your spreadsheet](#google-sheets-setup), please configure the following settings:
+
+#### config.settings.googleSheets.spreadsheetId
+
+The spreadsheet's link, or the long part of it between `/d/` and `/edit`.
+
+```json
+"spreadsheetId": "https://docs.google.com/spreadsheets/d/1aBcD**************************************/edit"
+```
+
+#### config.settings.googleSheets.credentials
+
+The path to the [service account's](#with-a-service-account) JSON key, if you're using one rather than signing in. You can leave this blank and set `GOOGLE_APPLICATION_CREDENTIALS` instead, and either is used over a sign in.
+
+```json
+"credentials": "/Users/user/.keys/content-tracker.json"
+```
+
+#### config.settings.googleSheets.foldersSheet / filesSheet
+
+The names of the tabs to use, which are created if they don't exist.
+
+```json
+"foldersSheet": "Folders",
+"filesSheet": "Files"
+```
+
+</details>
+
+<details>
+<summary><h2 id="development">Development</h2></summary>
+
 
 Clone the repo and run it locally like so:
 
 ```sh
-git clone https://github.com/garethnunns/cli-content-tracker.git
-cd cli-content-tracker
+git clone https://github.com/garethnunns/content-tracker.git
+cd content-tracker
 npm install
 npm link
 tracker
@@ -317,4 +491,50 @@ tracker
 
 _You can always `npm unlink` this later._
 
+Everything's in three folders:
+
+- `core/` - the actual tracker, which you can use on its own: `import { syncOnce } from '@garethnunns/content-tracker'`
+- `cli/` - the command line version, which is what npm gets
+- `gui/` - the Electron & Vue app
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Runs the app, reloading as you change it. |
+| `npm run build` | Builds the app into `out/`. |
+| `npm run lint` | Lints everything. |
+| `npm test` | Runs the unit tests. |
+| `npm run test:e2e` | Runs the end-to-end tests: the real command line and app, against pretend versions of Airtable, Google, npm and GitHub. |
+| `npm run verify` | Lints, tests and builds. |
+| `npm run check` | `verify`, then the end-to-end tests. |
+| `npm run dist` | Builds the app for the computer you're on, into `release/`. |
+| `npm run dist:mac` | Builds the app for both kinds of Mac, Apple Silicon and Intel. |
+| `npm run schema` | Writes `core/config.schema.json`, which editors use to help write a config, from `core/config-schema.js`. Run it after changing that. |
+| `npm run readme` | Puts `docs/help.md`, the app's Help, into this README's App section. Run it after changing that. |
+| `npm run screenshots` | Takes the pictures in `docs/screenshots`: each of the app's tabs in a Mac window, its menu in the menu bar, and mock-ups of the tables in Google Sheets and Airtable. The app's the real thing, against pretend Airtable and Google. Every release takes them again and attaches them as `screenshots.zip`. |
+| `npm run icons` | Makes the PNGs from the icon, `build/icon.svg`, and the menu bar's, `build/tray.svg`. Run it after changing either. |
+
+Windows has to be built on Windows, as ffprobe is a different program on each, and a build stops if it hasn't got the right one.
+
+Signing in with Google needs the app's client secret, which isn't in git: set `GOOGLE_CLIENT_SECRET` before `npm install`, or `CONTENT_TRACKER_GOOGLE_CLIENT_SECRET` when running it. Signing in with Airtable, and everything else, works without it.
+
+### Releasing
+
+Publishing a GitHub release, tagged `v<version>`, publishes to npm and attaches the Mac & Windows apps. Each version's release notes are `docs/release-notes/<version>.md`, which become the GitHub release's description, and the release won't publish without them. It needs an `NPM_TOKEN` secret with access to the package, and a `GOOGLE_CLIENT_SECRET` secret with the Google client secret.
+
+Dependabot opens a pull request each week for packages with newer versions, and minor and patch updates merge by themselves once the checks pass. Major updates, and the workflows' actions, wait for someone to merge them.
+
 Very welcome to pull requests!
+
+</details>
+
+<details>
+<summary><h2 id="licence">Licence</h2></summary>
+
+
+Copyright (C) 2024-2026 Generative Noise
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See [LICENSE](LICENSE) for the details.
+
+The app includes [FFmpeg](https://ffmpeg.org)'s ffprobe 4.4.1, from [ffprobe-installer](https://github.com/SavageCore/node-ffprobe-installer), under the LGPL 2.1 on Apple Silicon and the GPL 3 elsewhere. Its source is at [ffmpeg.org](https://ffmpeg.org/releases/ffmpeg-4.4.1.tar.xz).
+
+</details>
