@@ -80,5 +80,16 @@
     "vite": "^8.3.8",
     "vitest": "^5.1.1",
     "vue": "^3.5.46"
+  },
+  "overrides": {
+    "app-builder-lib": {
+      "minimatch": "^11.0.1"
+    },
+    "@electron/universal": {
+      "minimatch": "^11.0.1",
+      "dir-compare": {
+        "minimatch": "^3.1.5"
+      }
+    }
   }
 }
