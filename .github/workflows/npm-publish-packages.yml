@@ -15,7 +15,7 @@ jobs:
       # Setup .npmrc file to publish to npm
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '22.x'
+          node-version: '24.x'
           registry-url: 'https://registry.npmjs.org'
       # the install scripts aren't needed to publish, so nothing gets to run beside the token
       - run: npm ci --ignore-scripts
@@ -49,7 +49,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '22.x'
+          node-version: '24.x'
           cache: npm
       # installing writes Google's client secret into the app (scripts/oauth-secret.mjs)
       - run: npm ci
@@ -71,7 +71,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '22.x'
+          node-version: '24.x'
           cache: npm
       - run: npm ci
       - run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
