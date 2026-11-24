@@ -252,6 +252,17 @@ describe('google sheets', () => {
 		expect(ticks().length).toBe(before)
 	})
 
+	it('freezes the header row on a sheet it made, and only those', async () => {
+		const { fake, target } = googleSheets({ Files: [['Notes']] })
+		await target.prepare()
+		const frozen = fake.requests.flatMap(request => request.data?.requests ?? []).filter(request => request.updateSheetProperties)
+		expect(frozen).toHaveLength(1)
+		expect(frozen[0].updateSheetProperties).toEqual({
+			properties: { sheetId: fake.sheets.get('Folders').properties.sheetId, gridProperties: { frozenRowCount: 1 } },
+			fields: 'gridProperties.frozenRowCount'
+		})
+	})
+
 	it('warns whoever edits its own columns on a sheet it made', async () => {
 		const { fake, target } = googleSheets({ Files: [['Notes']] })
 		await target.prepare()

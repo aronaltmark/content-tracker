@@ -205,6 +205,13 @@ export class GoogleSheetsTarget {
 						}
 					},
 					{
+						// the headers stay in view however far down it's scrolled
+						updateSheetProperties: {
+							properties: { sheetId: sheet.id, gridProperties: { frozenRowCount: 1 } },
+							fields: 'gridProperties.frozenRowCount'
+						}
+					},
+					{
 						addProtectedRange: {
 							protectedRange: {
 								range: { sheetId: sheet.id, startColumnIndex: 0, endColumnIndex: wanted.length },
