@@ -36,6 +36,11 @@ const PROJECT = [
 	'05 Delivery/Stills/Backdrop 4K.png'
 ]
 
+// an editor sets ELECTRON_RUN_AS_NODE, which makes Electron plain Node: it's left out, as
+// Windows counts it as set even when it's empty
+// eslint-disable-next-line no-unused-vars
+const withoutRunAsNode = ({ ELECTRON_RUN_AS_NODE, ...env }) => env
+
 const escape = text => String(text).replace(/[&<>"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[char])
 
 async function writeProject(root) {
@@ -258,8 +263,7 @@ const app = await electron.launch({
 	args: ['.', '--use-mock-keychain', `--force-device-scale-factor=${SCALE}`],
 	cwd: ROOT,
 	env: {
-		...process.env,
-		ELECTRON_RUN_AS_NODE: '',
+		...withoutRunAsNode(process.env),
 		CONTENT_TRACKER_USER_DATA: path.join(work, 'data'),
 		CONTENT_TRACKER_NO_UPDATE_CHECK: '1',
 		CONTENT_TRACKER_OAUTH_ENDPOINT: oauth.url,

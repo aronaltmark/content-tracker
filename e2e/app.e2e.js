@@ -8,12 +8,16 @@ import { fakeReleases } from './fake-releases.mjs'
 
 let root, airtable, oauth, app, page
 
+// an editor sets ELECTRON_RUN_AS_NODE, which makes Electron plain Node: it's left out, as
+// Windows counts it as set even when it's empty
+// eslint-disable-next-line no-unused-vars
+const withoutRunAsNode = ({ ELECTRON_RUN_AS_NODE, ...env }) => env
+
 const openApp = async (env = {}) => {
 	app = await electron.launch({
 		args: ['.', '--use-mock-keychain'],
 		env: {
-			...process.env,
-			ELECTRON_RUN_AS_NODE: '', // set when run from inside an editor
+			...withoutRunAsNode(process.env),
 			AIRTABLE_ENDPOINT_URL: airtable.url,
 			AIRTABLE_API_KEY: '',
 			GOOGLE_SHEETS_ENDPOINT_URL: oauth.url,
