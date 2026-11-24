@@ -11,7 +11,9 @@ import * as path from 'path'
 import { fileURLToPath } from 'url'
 import { fakeAirtable } from '../e2e/fake-airtable.mjs'
 import { fakeOAuth } from '../e2e/fake-google.mjs'
+import { MetadataCache, cacheFile } from '../core/cache.js'
 import { finderSize } from '../core/format.js'
+import { mediaValues } from '../core/probe.js'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 // another folder can be given, to look at a change without touching the committed pictures
@@ -36,6 +38,32 @@ const PROJECT = [
 	'05 Delivery/Stills/Backdrop 4K.png'
 ]
 
+// what ffprobe would find in each, were they real: the files are only their names, so these go
+// into the app's media cache, which it reads as it would for files it had looked at before
+const video = (codec, width, height, fps, seconds, alpha = false) => ({ streams: [{ codec_type: 'video', codec_name: codec, width, height, r_frame_rate: `${fps}/1`, pix_fmt: alpha ? 'yuva444p12le' : 'yuv422p10le', bit_rate: '400000000' }], format: { duration: String(seconds) } })
+const still = (codec, width, height) => ({ streams: [{ codec_type: 'video', codec_name: codec, width, height, pix_fmt: 'rgb24' }], format: { format_long_name: `piped ${codec} sequence` } })
+const MEDIA = [
+	[/Opener frame/, still('png', 3840, 1080)],
+	[/Opener_v\d+\.mov$/, video('prores', 3840, 1080, 50, 42.5)],
+	[/Walkon_v\d+\.mov$/, video('prores', 3840, 1080, 50, 18, true)],
+	[/Walk-on mix/, { streams: [{ codec_type: 'audio', codec_name: 'pcm_s24le', sample_rate: '48000', channels: 2, bit_rate: '2304000' }], format: { duration: '48' } }],
+	[/LED Main/, video('hap', 3840, 1080, 50, 120)],
+	[/Backdrop 4K/, still('png', 3840, 2160)]
+]
+
+async function seedMedia(root) {
+	const cache = new MetadataCache(cacheFile([root]))
+	await cache.load()
+	for(const file of await fs.readdir(root, { recursive: true })) {
+		const probe = MEDIA.find(([name]) => name.test(file))?.[1]
+		const fullPath = path.join(root, file)
+		const stat = await fs.stat(fullPath)
+		if(stat.isFile())
+			cache.set(fullPath, stat.size, stat.mtime.toISOString(), mediaValues(probe))
+	}
+	await cache.save()
+}
+
 // an editor sets ELECTRON_RUN_AS_NODE, which makes Electron plain Node: it's left out, as
 // Windows counts it as set even when it's empty
 // eslint-disable-next-line no-unused-vars
@@ -43,11 +71,28 @@ const withoutRunAsNode = ({ ELECTRON_RUN_AS_NODE, ...env }) => env
 
 const escape = text => String(text).replace(/[&<>"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[char])
 
+// about the size each would be, so the pictures show real sizes: the files are sparse,
+// so they take up next to no room, and a change of a few bytes makes a new export
+const SIZES = [
+	[/\.pdf$/, 2_480_000],
+	[/frame 01\.png$/, 6_200_000],
+	[/Opener_v\d+\.mov$/, 1_843_200_000],
+	[/Walkon_v\d+\.mov$/, 925_400_000],
+	[/\.wav$/, 27_648_000],
+	[/LED Main/, 2_210_000_000],
+	[/Backdrop 4K/, 24_500_000]
+]
+
+async function place(root, file, change = 0) {
+	const fullPath = path.join(root, file)
+	await fs.mkdir(path.dirname(fullPath), { recursive: true })
+	await fs.writeFile(fullPath, '')
+	await fs.truncate(fullPath, (SIZES.find(([name]) => name.test(file))?.[1] ?? 10_000) + change)
+}
+
 async function writeProject(root) {
-	for(const file of PROJECT) {
-		await fs.mkdir(path.join(root, path.dirname(file)), { recursive: true })
-		await fs.writeFile(path.join(root, file), file)
-	}
+	for(const file of PROJECT)
+		await place(root, file)
 }
 
 // a page of our own, drawn in a window of its own, as a picture with see-through edges
@@ -253,6 +298,8 @@ async function menuBarPage(width, height) {
 selectors.setTestIdAttribute('data-test')
 
 const work = await fs.mkdtemp(path.join(os.tmpdir(), 'content-tracker-screenshots-'))
+// the app's given this as its home, so its cache is where cacheFile() works out from here too
+process.env.HOME = process.env.LOCALAPPDATA = work
 const project = path.join(work, 'Show content')
 await writeProject(project)
 await fs.mkdir(OUT, { recursive: true })
@@ -325,18 +372,21 @@ try {
 	const pictures = { settings: await shot('settings') }
 
 	await tab('Activity')
+	await seedMedia(project)
 	await run('Run once')
 
 	// a day's changes, for the dry run to show
-	await fs.writeFile(path.join(project, '05 Delivery/Opener/Opener_v013.mov'), 'a new export')
-	await fs.writeFile(path.join(project, '03 Renders/Opener/Opener_v014.mov'), 'the next version')
+	await place(project, '05 Delivery/Opener/Opener_v013.mov', 4096)
+	await place(project, '03 Renders/Opener/Opener_v014.mov')
 	await fs.rm(path.join(project, '03 Renders/Opener/Opener_v012.mov'))
+	await seedMedia(project)
 	await run('Run once')
 	pictures.activity = await shot('activity')
 
-	await fs.writeFile(path.join(project, '05 Delivery/Walk-on/Walkon_v004.mov'), 'a new export')
-	await fs.writeFile(path.join(project, '05 Delivery/Walk-on/Walkon_v005.mov'), 'the next version')
+	await place(project, '05 Delivery/Walk-on/Walkon_v004.mov', 4096)
+	await place(project, '05 Delivery/Walk-on/Walkon_v005.mov')
 	await fs.rm(path.join(project, '02 Design/Style frames/Opener frame 01.png'))
+	await seedMedia(project)
 	await run('Dry run')
 	await tab('Tracked')
 	pictures.tracked = await shot('tracked')
