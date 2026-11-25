@@ -287,7 +287,7 @@ test('shows the release notes from the version', async () => {
 	const notes = page.getByTestId('release-notes')
 	await expect(notes).toBeVisible()
 	await expect(notes.getByRole('heading', { name: version, exact: true })).toBeVisible()
-	await expect(notes.getByRole('heading', { name: 'New', exact: true })).toBeVisible()
+	await expect(notes.getByRole('heading', { name: 'New', exact: true }).first()).toBeVisible()
 	await page.keyboard.press('Escape')
 	await expect(notes).toBeHidden()
 })

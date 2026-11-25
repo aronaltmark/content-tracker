@@ -11,7 +11,7 @@
 
 This project came about as a means to track video content on concert shows, but is written generically. It recursively scans folders, which can be mapped network drives or streamed cloud storage like Dropbox, Drive, LucidLink or Suite, and keeps a list of the files & folders on Airtable or Google Sheets.
 
-There's a command line version and Mac, Windows & Linux app, which do the same thing.
+There's a command line version and Mac, Windows & Linux apps, which do the same thing.
 
 ## Quick Start
 
@@ -137,8 +137,6 @@ If all the records are being updated every time, it is likely because of a misma
 
 Sign in with Google: **Sign in with Google** in the app, or `tracker login google` on the command line, which opens your browser. Then choose the spreadsheet from your Google Drive - any spreadsheet you can edit: **Choose from Drive** in the app, or `tracker choose-spreadsheet`, which prints its ID for the config. **New spreadsheet** in the app makes one instead, named after the project. A sign in only opens the spreadsheets chosen or made this way, never the rest of your Drive, so one used with a version before 1.1 needs choosing once. The sign in is kept as Airtable's is, above, and `tracker logout google` forgets it.
 
-_Until Google has checked the app, it says so as you sign in: choose **Advanced**, then **Go to Content Tracker**._
-
 ### With a service account
 
 For a computer no one signs in on, like a server running it from cron, use a service account instead: a robot Google account that you share the spreadsheet with.
@@ -148,7 +146,7 @@ For a computer no one signs in on, like a server running it from cron, use a ser
 3. Make a spreadsheet and share it with the service account's email address (`...@...iam.gserviceaccount.com`) as an Editor.
 4. Fill in the [Google Sheets settings](#configsettingsgooglesheets).
 
-**The sheets and their header rows are created the first time it runs.** It has the same columns as the [Airtable tables](#tables), apart from `_parent` holding the parent folder's `_path`, as Sheets has no links.
+**The sheets and their header rows are created the first time it runs**, with the header row and `_path` frozen so they stay in view, and the columns fitted to what's in them. It has the same columns as the [Airtable tables](#tables), apart from `_parent` holding the parent folder's `_path`, as Sheets has no links.
 
 You can add columns of your own, in any position, and sort or filter however you like: rows are matched by `_path` and only the tracker's own columns are written to. Removing a file removes its whole row, your columns included. Everything is written as plain values, so nothing a file is named can run as a formula.
 

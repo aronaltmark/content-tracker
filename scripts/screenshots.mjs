@@ -253,8 +253,12 @@ function airtablePage(width, height) {
 }
 
 // the menu bar's own icons, near enough, beside the app's
-const WIFI = '<svg viewBox="0 0 20 16" width="20" height="16"><path fill="#fff" d="M10 13.2a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2zm-4.2-2.6a6 6 0 0 1 8.4 0l-1.3 1.4a4.1 4.1 0 0 0-5.8 0zM2.9 7.7a10.2 10.2 0 0 1 14.2 0l-1.3 1.4a8.3 8.3 0 0 0-11.6 0zM0 4.8a14.3 14.3 0 0 1 20 0l-1.3 1.4a12.4 12.4 0 0 0-17.4 0z"/></svg>'
-const BATTERY = '<svg viewBox="0 0 28 13" width="28" height="13"><rect x="0.5" y="0.5" width="24" height="12" rx="3.5" fill="none" stroke="#fff" stroke-opacity="0.6"/><rect x="2" y="2" width="17" height="9" rx="2" fill="#fff"/><path d="M26 4.5v4a2 2 0 0 0 0-4z" fill="#fff" fill-opacity="0.6"/></svg>'
+// the Wi-Fi's fan, a wedge and two bands from the same point
+const WIFI = '<svg class="system" viewBox="0 0 20 15" width="20" height="15"><g fill="#fff" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">'
+	+ '<path d="M10 14.2 7.4 11.6A3.7 3.7 0 0 1 12.6 11.6Z" stroke-width="1.2"/>'
+	+ '<path d="M4.9 9.1A7.2 7.2 0 0 1 15.1 9.1" fill="none" stroke-width="2.1"/>'
+	+ '<path d="M2 6.2A11.3 11.3 0 0 1 18 6.2" fill="none" stroke-width="2.1"/></g></svg>'
+const BATTERY = '<svg class="system" viewBox="0 0 28 13" width="28" height="13"><rect x="0.5" y="0.5" width="24" height="12" rx="3.5" fill="none" stroke="#fff" stroke-opacity="0.6"/><rect x="2" y="2" width="17" height="9" rx="2" fill="#fff"/><path d="M26 4.5v4a2 2 0 0 0 0-4z" fill="#fff" fill-opacity="0.6"/></svg>'
 
 async function menuBarPage(width, height) {
 	const tray = (await fs.readFile(path.join(ROOT, 'build', 'tray.svg'), 'utf8')).replace(/<title>.*?<\/title>/s, '')
@@ -275,9 +279,10 @@ async function menuBarPage(width, height) {
 			background: radial-gradient(120% 90% at 80% 0%, #2f6fd6 0%, #1a2c63 45%, #0d1024 100%) }
 		.bar { height: 30px; display: flex; align-items: center; justify-content: flex-end; gap: 18px; padding: 0 16px;
 			background: rgb(255 255 255 / 0.22); backdrop-filter: blur(30px); color: #fff; font-weight: 500 }
-		.bar svg { width: 18px; height: 18px }
-		.bar svg path, .bar svg circle { stroke: #fff }
-		.bar svg circle { fill: #fff }
+		.tray svg { width: 18px; height: 18px }
+		.tray svg path, .tray svg circle { stroke: #fff }
+		.tray svg circle { fill: #fff }
+		.bar .system { display: block; flex-shrink: 0 }
 		.tray { padding: 3px 7px; border-radius: 5px; background: rgb(255 255 255 / 0.28); display: flex }
 		.menu { position: absolute; top: 34px; right: 168px; width: 290px; padding: 5px; border-radius: 10px;
 			background: rgb(246 246 248 / 0.94); backdrop-filter: blur(30px);
@@ -338,15 +343,19 @@ try {
 
 	const tab = name => page.getByRole('navigation').getByRole('button', { name }).click()
 
-	// a run's done once there's a new result and it's stopped running
+	// a run's done once there's a new last run and it's stopped running: asked of the app,
+	// as a dry run ends on what it tracked rather than the activity
+	const state = async () => (await page.evaluate(() => window.tracker.getState())).state
 	const run = async button => {
-		const before = await page.getByTestId('result').textContent().catch(() => '')
+		const before = (await state()).lastRun?.time
 		await page.getByRole('button', { name: button }).click()
-		await page.waitForFunction(before => {
-			const result = document.querySelector('[data-test=result]')?.textContent
-			const status = document.querySelector('[data-test=status]')?.textContent
-			return result && result != before && status?.trim() != 'Running'
-		}, before)
+		for(const started = Date.now(); ; await page.waitForTimeout(100)) {
+			const now = await state()
+			if(!now.running && now.lastRun?.time != before)
+				break
+			if(Date.now() - started > 30000)
+				throw new Error(`${button} didn't finish`)
+		}
 	}
 	const shot = async name => {
 		const file = path.join(work, `${name}-app.png`)
@@ -367,9 +376,34 @@ try {
 		fields.scrollTo(0, 0)
 		// where a show's content would be, rather than where the pictures are taken from - shown only, not saved
 		fields.querySelector('[data-test=folders] li span').textContent = shown
-		fields.querySelector('input[spellcheck=false]').value = shown
+		fields.querySelector('[data-test=root-path]').value = shown
 	}, '/Volumes/Suite/Show content')
+	// the settings as a whole, every step folded, then each step open on its own
+	const STEPS = { authorisation: 'sign-in', tables: 'tables', files: 'files', filtering: 'filtering' }
+	const openOnly = async step => {
+		for(const name of Object.values(STEPS)) {
+			const header = page.getByTestId(`step-${name}`).locator('.header')
+			if((await header.getAttribute('aria-expanded') == 'true') != (name == step))
+				await header.click()
+		}
+		await page.locator('.fields').evaluate(fields => fields.scrollTo(0, 0))
+		// once it's finished sliding
+		await page.waitForTimeout(400)
+	}
+	await openOnly('')
 	const pictures = { settings: await shot('settings') }
+	for(const [picture, step] of Object.entries(STEPS)) {
+		await openOnly(step)
+		// the base's list dropped down, as it is when choosing one
+		if(step == 'tables') {
+			await page.getByTestId('choose-base').click()
+			await page.getByTestId('bases').waitFor()
+			await page.waitForTimeout(400)
+		}
+		pictures[`settings-${picture}`] = await shot(`settings-${picture}`)
+		if(step == 'tables')
+			await page.getByTestId('choose-base').click()
+	}
 
 	await tab('Activity')
 	await seedMedia(project)
