@@ -85,15 +85,31 @@ test('starts on the settings with nothing to run', async () => {
 	await expect(page.getByRole('button', { name: 'Run once' })).toBeDisabled()
 })
 
-test('sets up, tries a dry run, then updates the tracker', async () => {
+test('opens on the settings until it can reach the tables, and shows why a run failed', async () => {
 	await setUp()
-	await page.getByRole('button', { name: 'Activity' }).click()
+	await page.getByRole('button', { name: 'Forget token' }).click()
+	await app.close()
+	await openApp()
+	await expect(page.getByTestId('sign-in-airtable')).toBeVisible()
+	await expect(page.getByLabel('Base ID')).toBeHidden()
 
 	await page.getByRole('button', { name: 'Dry run' }).click()
+	await expect(page.getByRole('button', { name: 'Activity' })).toHaveClass('active')
+	await expect(page.getByTestId('result')).toContainText('Not signed in to Airtable')
+})
+
+test('sets up, tries a dry run, then updates the tracker', async () => {
+	await setUp()
+
+	// a dry run ends on what it found, and a run on how it went
+	await page.getByRole('button', { name: 'Dry run' }).click()
+	await expect(page.getByTestId('tracked')).toBeVisible()
+	await page.getByRole('button', { name: 'Activity' }).click()
 	await expect(page.getByTestId('result')).toContainText('Nothing was changed')
 	await expect(page.getByTestId('files')).toHaveText('1 added, 0 updated, 0 removed')
 	expect(airtable.tables).toEqual([])
 
+	await page.getByRole('button', { name: 'Settings' }).click()
 	await page.getByRole('button', { name: 'Run once' }).click()
 	await expect(page.getByTestId('result')).toContainText('Last run at')
 	expect(airtable.records('Files')[0].fields._path).toBe('/shots/notes.txt')
@@ -102,11 +118,13 @@ test('sets up, tries a dry run, then updates the tracker', async () => {
 
 test('watches until stopped', async () => {
 	await setUp()
-	await page.getByRole('button', { name: 'Activity' }).click()
 
 	await page.getByRole('button', { name: 'Start watching' }).click()
 	await expect(page.getByTestId('status')).toHaveText('Watching')
 	await expect(page.getByTestId('files')).toHaveText('1 added, 0 updated, 0 removed')
+	// and it shows how long until it looks again
+	await expect(page.getByTestId('countdown')).toBeAttached()
+	await expect(page.getByTestId('stop-watching')).toHaveAttribute('title', /^Scanning again in \d+/)
 
 	await page.getByRole('button', { name: 'Stop watching' }).click()
 	await expect(page.getByTestId('status')).toHaveText('Stopped')
@@ -292,12 +310,55 @@ test('signs in with Airtable, chooses a base and tracks in it', async () => {
 	await page.getByTestId('choose-base').click()
 	await page.getByTestId('bases').getByRole('button', { name: 'Show content' }).click()
 	await expect(page.getByTestId('base')).toHaveValue('appTest')
+	// the list goes back up once one's chosen
+	await expect(page.getByTestId('bases')).toBeHidden()
 	await saved()
 
 	await page.getByRole('button', { name: 'Activity' }).click()
 	await page.getByRole('button', { name: 'Run once' }).click()
 	await expect(page.getByTestId('result')).toContainText('Last run at')
 	expect(airtable.records('Files')[0].fields._path).toBe('/shots/notes.txt')
+})
+
+test('asks again when the browser\'s tab was closed, or stops waiting when cancelled', async () => {
+	await pickFolder(path.join(root, 'media'))
+	await page.getByTestId('add-folder').click()
+	await page.getByRole('radio', { name: 'Google Sheets' }).click()
+	await browser()
+	await page.getByTestId('sign-in-google').click()
+	await expect(page.getByTestId('google-account')).toHaveText('Signed in as someone@example.com')
+
+	// a tab that's closed: nothing ever comes back
+	await app.evaluate(({ shell }) => {
+		shell.openExternal = async () => {}
+	})
+	await page.getByTestId('choose-spreadsheet').click()
+	await expect(page.getByTestId('cancel-browser')).toBeVisible()
+	await expect(page.getByTestId('choose-spreadsheet')).toBeEnabled()
+	await page.getByTestId('cancel-browser').click()
+	await expect(page.getByTestId('cancel-browser')).toBeHidden()
+
+	// or it's just asked again, which stops the wait before
+	await page.getByTestId('choose-spreadsheet').click()
+	await expect(page.getByTestId('cancel-browser')).toBeVisible()
+	await browser()
+	await page.getByTestId('choose-spreadsheet').click()
+	await expect(page.getByTestId('spreadsheet')).toHaveValue('picked-sheet-1234')
+	await expect(page.getByTestId('auth-error')).toHaveCount(0)
+})
+
+test('resets everything, once it\'s sure', async () => {
+	await setUp()
+	await page.getByTestId('reset').click()
+	await expect(page.getByTestId('reset')).toHaveText('Sure? This signs you out too')
+	await page.getByTestId('reset').click()
+	await expect(page.getByTestId('reset')).toHaveText('Reset settings')
+	await expect(page.getByTestId('folders')).toHaveCount(0)
+	await expect(page.getByRole('button', { name: 'Run once' })).toBeDisabled()
+
+	const stored = JSON.parse(await fs.readFile(path.join(root, 'data/settings.json'), 'utf8'))
+	expect(stored.config.settings.files.dirs).toEqual([])
+	expect(stored.secrets).toBeUndefined()
 })
 
 test('chooses the spreadsheet from Google Drive once signed in', async () => {
@@ -314,6 +375,43 @@ test('chooses the spreadsheet from Google Drive once signed in', async () => {
 	expect(oauth.pickers.at(-1).login_hint).toBe('someone@example.com')
 	await saved()
 	expect(JSON.parse(await fs.readFile(path.join(root, 'data/settings.json'), 'utf8')).config.settings.googleSheets.spreadsheetId).toBe('picked-sheet-1234')
+})
+
+test('makes a new spreadsheet, named after the project, and tracks in it', async () => {
+	await pickFolder(path.join(root, 'media'))
+	await page.getByTestId('add-folder').click()
+	await page.getByRole('radio', { name: 'Google Sheets' }).click()
+	await expect(page.getByTestId('create-spreadsheet')).toBeDisabled()
+
+	await browser()
+	await page.getByTestId('sign-in-google').click()
+	// signing in is the first step done, so it folds away
+	await expect(page.getByTestId('sign-in-google')).toBeHidden()
+	await page.getByTestId('create-spreadsheet').click()
+	await expect(page.getByTestId('step-tables')).toContainText('media - Content Tracker')
+	expect(oauth.created).toEqual([{ id: expect.stringMatching(/^made-sheet-/), title: 'media - Content Tracker', sheets: ['Folders', 'Files'] }])
+	await expect(page.getByTestId('spreadsheet')).toHaveValue(oauth.created[0].id)
+	await saved()
+
+	await page.getByRole('button', { name: 'Run once' }).click()
+	await expect(page.getByTestId('result')).toContainText('Last run at')
+	expect(oauth.sheets.rows('Files').map(row => row[0])).toEqual(['_path', '/shots/notes.txt'])
+})
+
+test('shows a tracked folder in the Finder or Explorer, and only a tracked one', async () => {
+	await setUp()
+	await app.evaluate(({ shell }) => {
+		globalThis.shown = []
+		shell.openPath = async dir => {
+			globalThis.shown.push(dir)
+			return ''
+		}
+	})
+	await page.getByTestId('folders').getByRole('button', { name: /^Show/ }).click()
+	await expect.poll(() => app.evaluate(() => globalThis.shown)).toEqual([path.join(root, 'media')])
+
+	await expect(page.evaluate(() => window.tracker.showFolder('/'))).rejects.toThrow('Not allowed')
+	expect(await app.evaluate(() => globalThis.shown)).toHaveLength(1)
 })
 
 test('signs in with Google and tracks in a spreadsheet from its link, still signed in next time', async () => {
@@ -333,6 +431,11 @@ test('signs in with Google and tracks in a spreadsheet from its link, still sign
 
 	await app.close()
 	await openApp()
+
+	// the spreadsheet by its name, not its ID
+	await page.getByRole('button', { name: 'Settings' }).click()
+	await expect(page.getByTestId('step-tables')).toContainText('Shots')
+	await page.getByRole('button', { name: 'Activity' }).click()
 
 	// and it refreshes the sign in once it's run out
 	oauth.expire()
@@ -381,9 +484,17 @@ test('clears the media cache', async () => {
 	expect(await caches()).toHaveLength(1)
 
 	await page.getByRole('button', { name: 'Settings' }).click()
+	// done, so folded away
+	await page.getByTestId('step-files').getByRole('button', { name: 'Files' }).click()
+	await page.getByTestId('step-files').getByText('More options').click()
 	await page.getByTestId('wipe-cache').click()
 	await expect(page.getByTestId('cache-message')).toHaveText('Cleared')
 	expect(await caches()).toEqual([])
+
+	// and it's left open, coming back to the settings
+	await page.getByRole('button', { name: 'Activity' }).click()
+	await page.getByRole('button', { name: 'Settings' }).click()
+	await expect(page.getByTestId('track-folders')).toBeVisible()
 })
 
 test('exports the settings as a config, without the token', async () => {
@@ -422,8 +533,6 @@ test('lists what a dry run would do, and excludes from the list', async () => {
 	await fs.writeFile(path.join(root, 'media/shots/new.txt'), 'new')
 
 	await page.getByRole('button', { name: 'Dry run' }).click()
-	await expect(page.getByTestId('result')).toContainText('Dry run')
-	await page.getByRole('button', { name: 'Tracked' }).click()
 
 	const list = page.getByTestId('tracked')
 	const row = path => list.getByRole('row').filter({ has: page.getByRole('cell', { name: path, exact: true }) })
@@ -431,6 +540,12 @@ test('lists what a dry run would do, and excludes from the list', async () => {
 	await expect(row('/shots/notes.txt')).toHaveClass('modified')
 	await expect(row('/shots/clip.mov')).toHaveClass('same')
 	await expect(row('/shots/new.txt').getByRole('cell').nth(1)).toHaveText('3 bytes')
+
+	// only the new ones, then everything again
+	await page.getByTestId('only-new').click()
+	await expect(list.locator('td.path')).toHaveText(['/shots/new.txt'])
+	await page.getByTestId('only-new').click()
+	await expect(row('/shots/clip.mov')).toBeVisible()
 
 	await row('/shots/clip.mov').click({ button: 'right' })
 	await page.getByTestId('exclude-menu').getByRole('menuitem', { name: 'Exclude every .mov file' }).click()

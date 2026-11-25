@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import icon from '../../../build/icon.svg'
 import { version } from '../../../package.json'
 import AboutView from './components/AboutView.vue'
@@ -27,7 +27,53 @@ const status = computed(() => {
 	return state.value.watching ? 'Watching' : 'Stopped'
 })
 
+// while watching, how far it is through the wait for the next look, kept up to date each second
+const now = ref(Date.now())
+const clock = setInterval(() => now.value = Date.now(), 1000)
+onBeforeUnmount(() => clearInterval(clock))
+
+const waited = computed(() => {
+	const { watching, running, nextRun, interval } = state.value
+	if(!watching || running || !nextRun || !interval)
+		return null
+	const left = Math.max(nextRun - now.value, 0)
+	return { progress: 1 - left / interval, seconds: Math.ceil(left / 1000) }
+})
+
+const stopTitle = computed(() => waited.value
+	? `Scanning again in ${waited.value.seconds < 60 ? `${waited.value.seconds}s` : `${Math.ceil(waited.value.seconds / 60)} min`}`
+	: 'Stop updating the tracker')
+
 const ready = computed(() => settings.value?.config.settings.files.dirs.length > 0)
+
+// whether it has a way into the tables: a sign in, a token or a service account
+const connected = computed(() => {
+	const { config, signedIn, hasToken } = settings.value
+	if(config.settings.target == 'googleSheets')
+		return Boolean(signedIn?.google || config.settings.googleSheets?.credentials)
+	return Boolean(signedIn?.airtable || hasToken)
+})
+
+// a run that fails while watching shows why, unless the settings are being changed
+watch(() => state.value.lastRun, run => {
+	if(run?.error && view.value != 'settings')
+		view.value = 'activity'
+})
+
+// where a run's under way, and what it found
+function run(dryRun) {
+	view.value = 'activity'
+	act(async () => {
+		await tracker.run(dryRun)
+		if(dryRun && !state.value.lastRun?.error)
+			view.value = 'tracked'
+	})
+}
+
+function startWatching() {
+	view.value = 'activity'
+	act(tracker.start)
+}
 
 async function act(action) {
 	failure.value = ''
@@ -73,7 +119,7 @@ onMounted(async () => {
 	items.value = current.items
 	update.value = await tracker.getUpdate()
 
-	if(!ready.value)
+	if(!ready.value || !connected.value)
 		view.value = 'settings'
 })
 </script>
@@ -86,10 +132,13 @@ onMounted(async () => {
 			<button class="version" title="What's new" data-test="version" @click="showNotes = true">v{{ version }}</button>
 			<span class="status" :class="status.toLowerCase()" data-test="status">{{ status }}</span>
 			<div class="actions">
-				<button :disabled="state.running || !ready" title="Shows what would change without changing it" @click="act(() => tracker.run(true))">Dry run</button>
-				<button :disabled="state.running || !ready" title="Update the tables now" @click="act(() => tracker.run(false))">Run once</button>
-				<button v-if="state.watching" class="primary" @click="act(tracker.stop)">Stop watching</button>
-				<button v-else class="primary" :disabled="!ready" title="Keep updating the tracker at the set frequency" @click="act(tracker.start)">Start watching</button>
+				<button :disabled="state.running || !ready" title="Shows what would change without changing it" @click="run(true)">Dry run</button>
+				<button :disabled="state.running || !ready" title="Update the tables now" @click="run(false)">Run once</button>
+				<button v-if="state.watching" class="primary watching" :title="stopTitle" data-test="stop-watching" @click="act(tracker.stop)">
+					Stop watching
+					<span v-if="waited" class="countdown" :style="{ transform: `scaleX(${waited.progress})` }" data-test="countdown" />
+				</button>
+				<button v-else class="primary" :disabled="!ready" title="Keep updating the tracker at the set frequency" @click="startWatching">Start watching</button>
 			</div>
 		</header>
 
@@ -177,6 +226,30 @@ h1 {
 .status.watching {
 	border-color: var(--success);
 	color: var(--success);
+}
+
+/* filling along its bottom until it next looks */
+.watching {
+	position: relative;
+	overflow: hidden;
+}
+
+.countdown {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	height: 3px;
+	background: var(--accent-text);
+	opacity: 0.55;
+	transform-origin: left;
+	transition: transform 1s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.countdown {
+		transition: none;
+	}
 }
 
 .actions {

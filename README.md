@@ -21,9 +21,9 @@ Download the latest version for Mac (Apple Silicon or Intel), Windows or Linux (
 
 <!-- docs/help.md, the app's Help: change it there, then npm run readme -->
 
-1. Under **Settings**, add the folders to track, then under **Tables** choose Airtable or Google Sheets. Sign in, and choose the base or the spreadsheet. Settings save as you change them.
-2. Try a **Dry run** to see what it would change, without changing anything.
-3. **Run once** updates the tracker, and **Start watching** keeps it up to date.
+1. Under **Settings**, choose Airtable or Google Sheets, sign in, and choose the base or the spreadsheet. Then add the folders to track.
+2. Try a **Dry run** to see what it will change, without affecting your existing data.
+3. **Run once** updates the table, and **Start watching** keeps it up to date.
 
 **Tracked** lists what was found in the last run, with its size, dates and media details - click a heading to sort by it, including when each was first found. After a dry run it's coloured by what it would do: green for new, orange for modified, red for deleted, grey for unchanged. Click anything to stop tracking it by its name, folder or extension.
 
@@ -135,7 +135,7 @@ If all the records are being updated every time, it is likely because of a misma
 <summary><h2 id="google-sheets-setup">Google Sheets Setup</h2></summary>
 
 
-Sign in with Google: **Sign in with Google** in the app, or `tracker login google` on the command line, which opens your browser. Then choose the spreadsheet from your Google Drive - any spreadsheet you can edit: **Choose** beside Spreadsheet in the app, or `tracker choose-spreadsheet`, which prints its ID for the config. A sign in only opens the spreadsheets chosen this way, never the rest of your Drive; one you used with a version before 1.1 still opens. The sign in is kept as Airtable's is, above, and `tracker logout google` forgets it.
+Sign in with Google: **Sign in with Google** in the app, or `tracker login google` on the command line, which opens your browser. Then choose the spreadsheet from your Google Drive - any spreadsheet you can edit: **Choose from Drive** in the app, or `tracker choose-spreadsheet`, which prints its ID for the config. **New spreadsheet** in the app makes one instead, named after the project. A sign in only opens the spreadsheets chosen or made this way, never the rest of your Drive, so one used with a version before 1.1 needs choosing once. The sign in is kept as Airtable's is, above, and `tracker logout google` forgets it.
 
 _Until Google has checked the app, it says so as you sign in: choose **Advanced**, then **Go to Content Tracker**._
 

@@ -19,6 +19,8 @@ const kind = ref('files')
 const search = ref('')
 const menu = ref(null)
 const sort = ref({ by: 'path', descending: false })
+// after a dry run, only what it would do one way: new, modified and so on
+const only = ref('')
 
 // how each column sorts: a path by its text, dates as the ISO strings they are, the rest as numbers
 const SORTS = {
@@ -40,7 +42,8 @@ function sortBy(by) {
 
 const shown = computed(() => {
 	const text = search.value.trim().toLowerCase()
-	const list = (props.items[kind.value] ?? []).filter(item => !text || item.path.toLowerCase().includes(text))
+	const status = props.items.dryRun ? only.value : ''
+	const list = (props.items[kind.value] ?? []).filter(item => (!text || item.path.toLowerCase().includes(text)) && (!status || item.status == status))
 	const key = SORTS[sort.value.by]
 	const order = sort.value.descending ? -1 : 1
 	return list.toSorted((a, b) => {
@@ -153,7 +156,18 @@ onBeforeUnmount(() => {
 
 		<p v-if="items.dryRun" class="legend" data-test="legend">
 			<span>Dry run:</span>
-			<span v-for="(label, status) in STATUS" :key="status" :class="status">{{ counts[status] }} {{ label.toLowerCase() }}</span>
+			<button
+				v-for="(label, status) in STATUS"
+				:key="status"
+				type="button"
+				:class="[status, { dimmed: only && only != status }]"
+				:aria-pressed="only == status"
+				:title="only == status ? 'Show everything' : `Show only what's ${label.toLowerCase()}`"
+				:data-test="`only-${status}`"
+				@click="only = only == status ? '' : status"
+			>
+				{{ counts[status] }} {{ label.toLowerCase() }}
+			</button>
 		</p>
 
 		<p v-if="!items.files.length && !items.folders.length" class="empty">Nothing yet - run it, or try a dry run, to see what it tracks.</p>
@@ -243,9 +257,28 @@ onBeforeUnmount(() => {
 .legend {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 14px;
+	align-items: center;
+	gap: 6px;
 	margin: 0;
 	font-size: 13px;
+}
+
+/* each a filter: pressed shows only those, pressed again shows everything */
+.legend button {
+	padding: 2px 9px;
+	background: none;
+	border: 1px solid transparent;
+	border-radius: 99px;
+	transition: opacity 0.15s, border-color 0.15s;
+}
+
+.legend button:hover,
+.legend button[aria-pressed='true'] {
+	border-color: currentColor;
+}
+
+.legend button.dimmed {
+	opacity: 0.45;
 }
 
 .list {

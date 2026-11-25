@@ -134,6 +134,17 @@ export class SettingsStore {
 		await this.#write()
 	}
 
+	/**
+	 * Back to how it was when first opened: the settings, the token and the sign ins
+	 */
+	async reset() {
+		this.#config = blankConfig()
+		this.#token = ''
+		this.#signIns = {}
+		this.watching = false
+		await this.#write()
+	}
+
 	async clearToken() {
 		this.#token = ''
 		await this.#write()

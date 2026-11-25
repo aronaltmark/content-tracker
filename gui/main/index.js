@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, safeStorage, session, shell } from 'electron'
 import { promises as fs } from 'fs'
 import * as path from 'path'
-import { AirtableTarget, MetadataCache, OAuthSession, SCHEMA_URL, cacheFile, canSignIn, chooseSpreadsheet, configProblems, renameOld, signIn } from '../../core/index.js'
+import { AirtableTarget, CANCELLED, MetadataCache, OAuthSession, SCHEMA_URL, cacheFile, canSignIn, chooseSpreadsheet, configProblems, createSpreadsheet, createTarget, prepareConfig, renameOld, signIn } from '../../core/index.js'
 import { MenuBar } from './menu-bar.js'
 import { SettingsStore } from './store.js'
 import { TrackerController } from './tracker.js'
@@ -161,6 +161,15 @@ handle('config:save', async (saved, token) => {
 	return { ...view(), problems }
 })
 
+// everything back to how it was when first opened, signed out, and not watching
+handle('config:reset', async () => {
+	waiting?.abort()
+	await tracker.stop()
+	await store.reset()
+	menuBar?.update()
+	return view()
+})
+
 handle('config:clear-token', async () => {
 	await store.clearToken()
 	return view()
@@ -213,12 +222,41 @@ handle('config:import', async () => {
 	return { ...view(), problems }
 })
 
+// waiting on the browser, for a sign in or a spreadsheet: one at a time, as the tab
+// may have been closed and it's asked again, which stops the one before
+let waiting
+
+/**
+ * Wait on the browser, stopping whatever was waited on before
+ * @returns {Promise} what it came back with, or null if it was stopped
+ */
+async function inBrowser(action) {
+	waiting?.abort()
+	const controller = waiting = new AbortController()
+	try {
+		return await action({ openBrowser: url => shell.openExternal(url), signal: controller.signal })
+	}
+	catch(err) {
+		if(err.code == CANCELLED)
+			return null
+		throw err
+	}
+	finally {
+		if(waiting == controller)
+			waiting = undefined
+	}
+}
+
+handle('browser:cancel', () => waiting?.abort())
+
 handle('auth:sign-in', async name => {
 	if(!PROVIDERS.includes(name))
 		throw new Error('Not allowed')
 
 	// in the browser, where the user's own sign ins and password managers are
-	const tokens = await signIn(name, { openBrowser: url => shell.openExternal(url) })
+	const tokens = await inBrowser(options => signIn(name, options))
+	if(!tokens)
+		return null
 	await store.setSignIn(name, tokens)
 	if(window)
 		showWindow()
@@ -236,10 +274,32 @@ handle('sheets:choose', async () => {
 	const google = store.signIns().google
 	if(!google)
 		throw new Error('Sign in with Google first')
-	const chosen = await chooseSpreadsheet({ account: google.account, openBrowser: url => shell.openExternal(url) })
+	const chosen = await inBrowser(options => chooseSpreadsheet({ ...options, account: google.account }))
 	if(window)
 		showWindow()
 	return chosen
+})
+
+// a new spreadsheet in the signed in Google Drive, named after the project, with its tabs ready
+handle('sheets:create', async () => {
+	const session = sessions().google
+	if(!session)
+		throw new Error('Sign in with Google first')
+	const { files, googleSheets } = store.full().settings
+	const { foldersSheet = 'Folders', filesSheet = 'Files' } = googleSheets ?? {}
+	const project = path.basename(files.rootPath || files.dirs[0] || '')
+	const sheets = [...(files.trackFolders === false ? [] : [foldersSheet]), filesSheet]
+	return createSpreadsheet({ session, title: project ? `${project} - Content Tracker` : 'Content Tracker', sheets })
+})
+
+// the name of the base or spreadsheet it tracks in, to show rather than its ID: null if it can't be reached
+handle('tables:name', async () => {
+	try {
+		return await createTarget(prepareConfig(store.full()), { sessions: sessions() }).name()
+	}
+	catch {
+		return null
+	}
 })
 
 // the bases the token or sign in can reach, to choose from
@@ -254,6 +314,15 @@ handle('cache:wipe', async () => {
 	if(tracker.state.running)
 		throw new Error('Wait for the run to finish first')
 	await new MetadataCache(cacheFile(store.full().settings.files.dirs)).wipe()
+})
+
+// one of the tracked folders in the Finder or Explorer, and only one of those
+handle('folder:show', async dir => {
+	if(typeof dir != 'string' || !store.view().config.settings.files.dirs.includes(dir))
+		throw new Error('Not allowed')
+	const problem = await shell.openPath(dir)
+	if(problem)
+		throw new Error(problem)
 })
 
 handle('dialog:folder', async () => {

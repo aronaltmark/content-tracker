@@ -17,7 +17,10 @@ export class TrackerController extends EventEmitter {
 	state = {
 		running: false,
 		watching: false,
-		lastRun: null
+		lastRun: null,
+		// while watching, when it'll next look, and how long it waits each time (ms)
+		nextRun: null,
+		interval: 0
 	}
 
 	/**
@@ -52,7 +55,7 @@ export class TrackerController extends EventEmitter {
 		if(this.state.running)
 			return
 
-		this.#setState({ running: true })
+		this.#setState({ running: true, nextRun: null })
 
 		try {
 			const target = createTarget(config, { logger: this.logger, sessions: this.getSessions() })
@@ -94,7 +97,7 @@ export class TrackerController extends EventEmitter {
 
 		const frequency = Math.max(prepareConfig(this.getConfig()).settings.files.frequency, 1)
 
-		this.#setState({ watching: true })
+		this.#setState({ watching: true, interval: frequency * 1000 })
 		// the settings save as they're changed, so each run takes them as they are then
 		this.#watching = repeat(() => {
 			let config
@@ -107,7 +110,7 @@ export class TrackerController extends EventEmitter {
 				return
 			}
 			return this.#sync(false, config)
-		}, frequency)
+		}, frequency, undefined, nextRun => this.#setState({ nextRun }))
 	}
 
 	async stop() {
@@ -117,6 +120,6 @@ export class TrackerController extends EventEmitter {
 		this.#watching.stop()
 		await this.#watching.done
 		this.#watching = undefined
-		this.#setState({ watching: false })
+		this.#setState({ watching: false, nextRun: null })
 	}
 }
