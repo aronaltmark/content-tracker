@@ -1,6 +1,9 @@
 name: Publish the ffprobe packages
 # the @generativenoise/ffprobe-* packages, made by scripts/ffprobe-packages.mjs from its
-# pinned builds: run by hand once the pins change, never by a Content Tracker release
+# pinned builds: run by hand once the pins change, never by a Content Tracker release.
+# npm only validates a package's trusted publisher by a publish within a couple of days of
+# it being added, and one left unvalidated lapses: so before running this for a new version,
+# add (or add again) this workflow as each package's trusted publisher on npm
 on:
   workflow_dispatch:
 permissions:
