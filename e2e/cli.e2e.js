@@ -162,8 +162,26 @@ test('never prints the token', async () => {
 	expect(output).not.toContain('wrong-secret-token')
 })
 
-test('signs in with Google, then tracks in a spreadsheet', async () => {
-	const oauth = await fakeOAuth()
+// a command that prints where to go in the browser, and this is the browser that goes there:
+// the address ends before the colour's reset code that follows it
+async function inBrowser(args, env, address) {
+	const command = spawn(process.execPath, [cli, ...args], { cwd: root, env })
+	let output = ''
+	const finished = new Promise(resolve => command.on('close', resolve))
+	command.stderr.on('data', chunk => output += chunk)
+	await new Promise(resolve => command.stdout.on('data', chunk => {
+		output += chunk
+		if(output.match(address))
+			resolve()
+	}))
+	await fetch(output.match(address)[0].split('\u001b')[0])
+	const code = await finished
+	return { code, output }
+}
+
+test('signs in with Google, chooses a spreadsheet, then tracks in it', async () => {
+	// a sign in only opens the spreadsheets chosen for it, as drive.file has it
+	const oauth = await fakeOAuth({ onlyPicked: true })
 	const env = {
 		...process.env,
 		BROWSER: 'none',
@@ -174,26 +192,23 @@ test('signs in with Google, then tracks in a spreadsheet', async () => {
 		CONTENT_TRACKER_OAUTH_ENDPOINT: oauth.url,
 		CONTENT_TRACKER_GOOGLE_CLIENT_ID: 'google-client',
 		CONTENT_TRACKER_GOOGLE_CLIENT_SECRET: 'google-secret',
+		CONTENT_TRACKER_PICKER_URL: `${oauth.url}/google/picker`,
 		GOOGLE_SHEETS_ENDPOINT_URL: oauth.url
 	}
 
 	try {
-		// it prints where to sign in, and this is the browser that goes there
-		const login = spawn(process.execPath, [cli, 'login', 'google'], { cwd: root, env })
-		let output = ''
-		const finished = new Promise(resolve => login.on('close', resolve))
-		await new Promise(resolve => login.stdout.on('data', chunk => {
-			output += chunk
-			if(output.match(/https?:\/\/\S+authorize\S+/))
-				resolve()
-		}))
-		await fetch(output.match(/https?:\/\/\S+authorize\S+/)[0])
-		expect(await finished).toBe(0)
+		expect((await inBrowser(['login', 'google'], env, /https?:\/\/\S+authorize\S+/)).code).toBe(0)
 
 		const signIns = await fs.readFile(path.join(root, 'sign-ins.json'), 'utf8')
 		expect(JSON.parse(signIns).google.account).toBe('someone@example.com')
 		if(process.platform != 'win32')
 			expect((await fs.stat(path.join(root, 'sign-ins.json'))).mode & 0o777).toBe(0o600)
+
+		const chose = await inBrowser(['choose-spreadsheet'], env, /https?:\/\/\S+picker\S+/)
+		expect(chose.code).toBe(0)
+		expect(chose.output).toContain('Chose Shots')
+		expect(chose.output).toContain('picked-sheet-1234')
+		expect(oauth.pickers[0].login_hint).toBe('someone@example.com')
 
 		const config = path.join(root, 'sheets-config.json')
 		await fs.writeFile(config, JSON.stringify({
@@ -208,7 +223,7 @@ test('signs in with Google, then tracks in a spreadsheet', async () => {
 					limitToFirstFile: false,
 					concurrency: 4
 				},
-				googleSheets: { spreadsheetId: 'https://docs.google.com/spreadsheets/d/abc123/edit', credentials: '', foldersSheet: 'Folders', filesSheet: 'Files' }
+				googleSheets: { spreadsheetId: 'https://docs.google.com/spreadsheets/d/picked-sheet-1234/edit', credentials: '', foldersSheet: 'Folders', filesSheet: 'Files' }
 			}
 		}))
 

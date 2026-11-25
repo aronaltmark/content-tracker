@@ -21,7 +21,7 @@ Download the latest version for Mac (Apple Silicon or Intel), Windows or Linux (
 
 <!-- docs/help.md, the app's Help: change it there, then npm run readme -->
 
-1. Under **Settings**, add the folders to track, then under **Tables** choose Airtable or Google Sheets. Sign in, and choose the base or give the spreadsheet's link. Settings save as you change them.
+1. Under **Settings**, add the folders to track, then under **Tables** choose Airtable or Google Sheets. Sign in, and choose the base or the spreadsheet. Settings save as you change them.
 2. Try a **Dry run** to see what it would change, without changing anything.
 3. **Run once** updates the tracker, and **Start watching** keeps it up to date.
 
@@ -135,7 +135,7 @@ If all the records are being updated every time, it is likely because of a misma
 <summary><h2 id="google-sheets-setup">Google Sheets Setup</h2></summary>
 
 
-Sign in with Google: **Sign in with Google** in the app, or `tracker login google` on the command line, which opens your browser. Then give it the spreadsheet's link - any spreadsheet you can edit. The sign in is kept as Airtable's is, above, and `tracker logout google` forgets it.
+Sign in with Google: **Sign in with Google** in the app, or `tracker login google` on the command line, which opens your browser. Then choose the spreadsheet from your Google Drive - any spreadsheet you can edit: **Choose** beside Spreadsheet in the app, or `tracker choose-spreadsheet`, which prints its ID for the config. A sign in only opens the spreadsheets chosen this way, never the rest of your Drive; one you used with a version before 1.1 still opens. The sign in is kept as Airtable's is, above, and `tracker logout google` forgets it.
 
 _Until Google has checked the app, it says so as you sign in: choose **Advanced**, then **Go to Content Tracker**._
 
@@ -176,11 +176,16 @@ Options:
   -nd, --no-delete       never remove records
   -w, --wipe-cache       clear the metadata cache
   -h, --help             display help for command
+
+Commands:
+  login <service>        sign in with Google or Airtable, in your browser
+  choose-spreadsheet     choose the spreadsheet from your Google Drive, in your browser
+  logout <service>       forget a sign in
 ```
 
 It's installed as both `tracker` and `content-tracker`. It exits with an error code if something went wrong, so a cron job can tell.
 
-`tracker login google` or `tracker login airtable` signs in, in your browser ([Airtable](#airtable-setup), [Google Sheets](#google-sheets-setup)), and `tracker logout google` or `tracker logout airtable` forgets it. It prints the link too, in case the browser doesn't open (`BROWSER=none` stops it trying). The browser has to be on the same computer, as that's where the sign in comes back to - on one without, use a token or a service account.
+`tracker login google` or `tracker login airtable` signs in, in your browser ([Airtable](#airtable-setup), [Google Sheets](#google-sheets-setup)), and `tracker logout google` or `tracker logout airtable` forgets it. `tracker choose-spreadsheet` chooses the spreadsheet a Google sign in tracks in, from your Google Drive, and prints the ID to put in the config. Each prints the link too, in case the browser doesn't open (`BROWSER=none` stops it trying). The browser has to be on the same computer, as that's where the sign in comes back to - on one without, use a token or a service account.
 
 ### Config Option: -c, --config <path>
 
@@ -450,7 +455,7 @@ Once you've [setup your spreadsheet](#google-sheets-setup), please configure the
 
 #### config.settings.googleSheets.spreadsheetId
 
-The spreadsheet's link, or the long part of it between `/d/` and `/edit`.
+The spreadsheet's link, or the long part of it between `/d/` and `/edit`. Signed in with Google, choose it with `tracker choose-spreadsheet`, which prints it.
 
 ```json
 "spreadsheetId": "https://docs.google.com/spreadsheets/d/1aBcD**************************************/edit"

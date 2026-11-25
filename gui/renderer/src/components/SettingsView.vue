@@ -14,6 +14,7 @@ const saving = ref(false)
 const signingIn = ref(false)
 const authError = ref('')
 const bases = ref([])
+const chosenSheet = ref('')
 
 // Electron wraps these in a line about the remote method
 const reason = err => err.message.replace(/^Error invoking remote method '.*?': (Error: )?/, '')
@@ -149,6 +150,20 @@ async function chooseBase() {
 		bases.value = await tracker.airtableBases()
 		if(!bases.value.length)
 			authError.value = 'There are no bases you\'ve given it access to.'
+	}
+	catch(err) {
+		authError.value = reason(err)
+	}
+}
+
+async function chooseSpreadsheet() {
+	authError.value = ''
+	try {
+		const chosen = await tracker.chooseSpreadsheet()
+		if(chosen) {
+			sheets.value.spreadsheetId = chosen.id
+			chosenSheet.value = chosen.name
+		}
 	}
 	catch(err) {
 		authError.value = reason(err)
@@ -331,9 +346,15 @@ async function clearToken() {
 						<span v-if="!model.signedIn?.google" class="hint">Google will say it hasn't checked this app yet: choose Advanced, then Go to Content Tracker.</span>
 					</div>
 
-					<SettingField label="Spreadsheet" hint="Its link, or the ID from it. You need to be able to edit it.">
-						<input v-model="sheets.spreadsheetId" spellcheck="false" placeholder="https://docs.google.com/spreadsheets/d/..." data-test="spreadsheet">
-					</SettingField>
+					<div class="field-group">
+						<span class="heading">Spreadsheet</span>
+						<div class="picker">
+							<input v-model="sheets.spreadsheetId" spellcheck="false" placeholder="https://docs.google.com/spreadsheets/d/..." aria-label="Spreadsheet" data-test="spreadsheet" @input="chosenSheet = ''">
+							<button v-if="model.canSignIn?.google" type="button" :disabled="!model.signedIn?.google" data-test="choose-spreadsheet" @click="chooseSpreadsheet">Choose</button>
+						</div>
+						<span v-if="chosenSheet" class="hint" data-test="chosen-spreadsheet">{{ chosenSheet }}</span>
+						<span v-else class="hint">Choose it from your Google Drive, or give its link.</span>
+					</div>
 
 					<details :open="Boolean(sheets.credentials) || !model.canSignIn?.google">
 						<summary>{{ model.canSignIn?.google ? 'Or use a service account' : 'Service account' }}</summary>

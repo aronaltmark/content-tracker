@@ -115,8 +115,11 @@ export class GoogleSheetsTarget {
 			this.request = request
 		else if(credentials)
 			this.request = serviceAccountRequest(credentials)
-		else if(session)
+		else if(session) {
 			this.request = signedInRequest(session, http)
+			// a sign in only opens the spreadsheets it's been given (drive.file)
+			this.signedIn = true
+		}
 		else
 			throw new Error('Not signed in to Google - sign in, or set settings.googleSheets.credentials or GOOGLE_APPLICATION_CREDENTIALS')
 
@@ -138,6 +141,8 @@ export class GoogleSheetsTarget {
 					await this.wait(2 ** attempt * 2000)
 					continue
 				}
+				if(this.signedIn && (status == 403 || status == 404))
+					throw new Error('Content Tracker can\'t open that spreadsheet - choose it with Choose beside Spreadsheet in the app, or tracker choose-spreadsheet', { cause: err })
 				throw new Error(`Google Sheets said ${status ?? ''} - ${err.response?.data?.error?.message ?? err.message}`, { cause: err })
 			}
 		}

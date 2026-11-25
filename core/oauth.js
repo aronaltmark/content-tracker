@@ -3,6 +3,10 @@ import { createServer } from 'http'
 import { CLIENTS } from './oauth-clients.js'
 
 const SIGN_IN_TIMEOUT = 5 * 60 * 1000
+const DRIVE_FILE = 'https://www.googleapis.com/auth/drive.file'
+
+// the store's page with Google's file picker on, which sends the choice back to this computer
+export const PICKER_URL = 'https://store.generativenoise.com/tools/content-tracker/choose-spreadsheet/'
 const EXPIRY_MARGIN = 60 * 1000 // refresh a minute early, so a request never goes with a stale token
 
 export const PROVIDERS = {
@@ -10,11 +14,13 @@ export const PROVIDERS = {
 		name: 'Google',
 		authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
 		tokenUrl: 'https://oauth2.googleapis.com/token',
-		scopes: ['openid', 'email', 'https://www.googleapis.com/auth/spreadsheets'],
+		// only the spreadsheets it's given, chosen in Google's file picker, or that it made
+		scopes: ['openid', 'email', DRIVE_FILE],
 		// Google lets people untick this on its consent screen, and nothing works without it
-		required: { 'https://www.googleapis.com/auth/spreadsheets': 'your spreadsheets - sign in again and tick the box for Google Sheets' },
-		// offline for a refresh token, and consent so there's one every time
-		params: { access_type: 'offline', prompt: 'consent' },
+		required: { [DRIVE_FILE]: 'the spreadsheets you choose - sign in again and tick the box for them' },
+		// offline for a refresh token, and consent so there's one every time; anyone who gave
+		// an older version all their spreadsheets keeps that, so the one they use still opens
+		params: { access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true' },
 		// Google lets a desktop app take the reply on any port
 		host: '127.0.0.1',
 		port: 0,
@@ -63,19 +69,27 @@ export function canSignIn(name, env = process.env) {
 
 const base64url = buffer => buffer.toString('base64url')
 
-const page = (title, text) => `<!doctype html><meta charset="utf-8"><title>${title}</title>
+// what comes back in the address goes on the page as text, never as HTML
+const escape = text => String(text).replace(/[&<>"']/g, character => `&#${character.charCodeAt(0)};`)
+
+const page = (title, text) => `<!doctype html><meta charset="utf-8"><title>${escape(title)}</title>
 <body style="font:16px system-ui,sans-serif;display:grid;place-items:center;height:90vh;margin:0">
-<div style="text-align:center"><h1 style="font-size:20px">${title}</h1><p>${text}</p></div>`
+<div style="text-align:center"><h1 style="font-size:20px">${escape(title)}</h1><p>${escape(text)}</p></div>`
 
 /**
- * Wait for the browser to come back with the sign in's answer
- * @returns {Promise} .redirectUri, .code (a Promise) & .close()
+ * Wait for the browser to come back to this computer, with a sign in's answer
+ * or a spreadsheet chosen
+ * @param {object} details where to listen: .host, .port, .path, and .name for what's said
+ * @param {string} state what the answer has to come back with
+ * @param {function} take (searchParams) => { value, title, text }: what came back, and
+ * what the page says of it, or throws to say why it can't be used
+ * @returns {Promise} .redirectUri, .answer (a Promise of the value) & .close()
  */
-async function listenForCode(details, state, timeout) {
+async function listen(details, state, timeout, take) {
 	let settle
-	const code = new Promise((resolve, reject) => settle = { resolve, reject })
+	const answer = new Promise((resolve, reject) => settle = { resolve, reject })
 	// the answer can come back refused while the browser's still opening, before it's awaited
-	code.catch(() => {})
+	answer.catch(() => {})
 
 	const handler = (request, response) => {
 		const url = new URL(request.url, 'http://localhost')
@@ -85,19 +99,23 @@ async function listenForCode(details, state, timeout) {
 		}
 
 		const failed = (message) => {
-			response.writeHead(400, { 'Content-Type': 'text/html' }).end(page('Not signed in', message))
+			response.writeHead(400, { 'Content-Type': 'text/html' }).end(page(details.failed, message))
 			settle.reject(new Error(message))
 		}
 
-		// anything without the state we sent didn't come from this sign in
+		// anything without the state we sent didn't come from this sign in, or this choice
 		if(url.searchParams.get('state') != state)
-			return failed('That sign in link has expired - try again from Content Tracker.')
-		if(url.searchParams.get('error'))
-			return failed(`${details.name} said ${url.searchParams.get('error_description') ?? url.searchParams.get('error')}.`)
+			return failed('That link has expired - try again from Content Tracker.')
 
-		response.writeHead(200, { 'Content-Type': 'text/html' })
-			.end(page('Signed in', 'You can close this tab and go back to Content Tracker.'))
-		settle.resolve(url.searchParams.get('code'))
+		let taken
+		try {
+			taken = take(url.searchParams)
+		}
+		catch(err) {
+			return failed(err.message)
+		}
+		response.writeHead(200, { 'Content-Type': 'text/html' }).end(page(taken.title, taken.text))
+		settle.resolve(taken.value)
 	}
 
 	// localhost can mean either, depending on the computer, so both are listened on
@@ -121,11 +139,11 @@ async function listenForCode(details, state, timeout) {
 		servers.push(server)
 	}
 
-	const timer = setTimeout(() => settle.reject(new Error('Signing in took too long - try again')), timeout)
+	const timer = setTimeout(() => settle.reject(new Error(details.tooLong)), timeout)
 
 	return {
 		redirectUri: `http://${details.host}:${port}${details.path}`,
-		code,
+		answer,
 		close() {
 			clearTimeout(timer)
 			servers.forEach(server => {
@@ -193,7 +211,11 @@ export async function signIn(name, { openBrowser, env = process.env, http = glob
 
 	const verifier = base64url(randomBytes(32))
 	const state = base64url(randomBytes(16))
-	const listening = await listenForCode(details, state, timeout)
+	const listening = await listen({ ...details, failed: 'Not signed in', tooLong: 'Signing in took too long - try again' }, state, timeout, params => {
+		if(params.get('error'))
+			throw new Error(`${details.name} said ${params.get('error_description') ?? params.get('error')}.`)
+		return { value: params.get('code'), title: 'Signed in', text: 'You can close this tab and go back to Content Tracker.' }
+	})
 
 	try {
 		const url = new URL(details.authorizeUrl)
@@ -209,7 +231,7 @@ export async function signIn(name, { openBrowser, env = process.env, http = glob
 		})
 
 		await openBrowser(url.toString())
-		const code = await listening.code
+		const code = await listening.answer
 
 		const answer = await requestTokens(details, {
 			grant_type: 'authorization_code',
@@ -224,6 +246,46 @@ export async function signIn(name, { openBrowser, env = process.env, http = glob
 				throw new Error(`Content Tracker wasn't given access to ${what}`)
 
 		return { ...tokensFrom(answer), account: await accountOf(details, answer, http, env) }
+	}
+	finally {
+		listening.close()
+	}
+}
+
+/**
+ * Choose a spreadsheet from Google Drive, with Google's file picker on the
+ * store's page, which sends the choice back to a server on this computer.
+ * Choosing it is what lets a Google sign in open it (drive.file).
+ * @param {object} options
+ * @param {function} options.openBrowser (url) => opens it
+ * @param {string} options.account who's signed in, for Google to offer first
+ * @returns {Promise} .id & .name of the spreadsheet, or null if none was chosen
+ */
+export async function chooseSpreadsheet({ openBrowser, account = '', env = process.env, timeout = SIGN_IN_TIMEOUT } = {}) {
+	const state = base64url(randomBytes(16))
+	const details = {
+		name: 'Google',
+		host: '127.0.0.1',
+		port: 0,
+		path: '/picked',
+		failed: 'No spreadsheet chosen',
+		tooLong: 'Choosing a spreadsheet took too long - try again'
+	}
+	const listening = await listen(details, state, timeout, params => {
+		if(params.get('cancelled'))
+			return { value: null, title: 'No spreadsheet chosen', text: 'You can close this tab and go back to Content Tracker.' }
+		const id = params.get('id') ?? ''
+		if(!/^[\w-]{10,200}$/.test(id))
+			throw new Error('That isn\'t a spreadsheet - try again from Content Tracker.')
+		const name = params.get('name') || 'the spreadsheet'
+		return { value: { id, name }, title: `Chose ${name}`, text: 'You can close this tab and go back to Content Tracker.' }
+	})
+
+	try {
+		const url = new URL(env.CONTENT_TRACKER_PICKER_URL || PICKER_URL)
+		url.search = new URLSearchParams({ return: listening.redirectUri, state, ...(account && { login_hint: account }) })
+		await openBrowser(url.toString())
+		return await listening.answer
 	}
 	finally {
 		listening.close()

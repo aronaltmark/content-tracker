@@ -1,4 +1,4 @@
-1. Under **Settings**, add the folders to track, then under **Tables** choose Airtable or Google Sheets. Sign in, and choose the base or give the spreadsheet's link. Settings save as you change them.
+1. Under **Settings**, add the folders to track, then under **Tables** choose Airtable or Google Sheets. Sign in, and choose the base or the spreadsheet. Settings save as you change them.
 2. Try a **Dry run** to see what it would change, without changing anything.
 3. **Run once** updates the tracker, and **Start watching** keeps it up to date.
 

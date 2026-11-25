@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, safeStorage, session, shell } from 'electron'
 import { promises as fs } from 'fs'
 import * as path from 'path'
-import { AirtableTarget, MetadataCache, OAuthSession, SCHEMA_URL, cacheFile, canSignIn, configProblems, renameOld, signIn } from '../../core/index.js'
+import { AirtableTarget, MetadataCache, OAuthSession, SCHEMA_URL, cacheFile, canSignIn, chooseSpreadsheet, configProblems, renameOld, signIn } from '../../core/index.js'
 import { MenuBar } from './menu-bar.js'
 import { SettingsStore } from './store.js'
 import { TrackerController } from './tracker.js'
@@ -228,6 +228,18 @@ handle('auth:sign-in', async name => {
 handle('auth:sign-out', async name => {
 	await store.setSignIn(name, undefined)
 	return view()
+})
+
+// a spreadsheet from Google Drive, chosen in Google's file picker in the browser, which is
+// what lets the sign in open it: its ID & name, or null if none was chosen
+handle('sheets:choose', async () => {
+	const google = store.signIns().google
+	if(!google)
+		throw new Error('Sign in with Google first')
+	const chosen = await chooseSpreadsheet({ account: google.account, openBrowser: url => shell.openExternal(url) })
+	if(window)
+		showWindow()
+	return chosen
 })
 
 // the bases the token or sign in can reach, to choose from

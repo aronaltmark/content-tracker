@@ -23,6 +23,7 @@ const openApp = async (env = {}) => {
 			GOOGLE_SHEETS_ENDPOINT_URL: oauth.url,
 			GOOGLE_APPLICATION_CREDENTIALS: '',
 			CONTENT_TRACKER_OAUTH_ENDPOINT: oauth.url,
+			CONTENT_TRACKER_PICKER_URL: `${oauth.url}/google/picker`,
 			CONTENT_TRACKER_GOOGLE_CLIENT_ID: 'google-client',
 			CONTENT_TRACKER_GOOGLE_CLIENT_SECRET: 'google-secret',
 			CONTENT_TRACKER_AIRTABLE_CLIENT_ID: 'airtable-client',
@@ -297,6 +298,22 @@ test('signs in with Airtable, chooses a base and tracks in it', async () => {
 	await page.getByRole('button', { name: 'Run once' }).click()
 	await expect(page.getByTestId('result')).toContainText('Last run at')
 	expect(airtable.records('Files')[0].fields._path).toBe('/shots/notes.txt')
+})
+
+test('chooses the spreadsheet from Google Drive once signed in', async () => {
+	await pickFolder(path.join(root, 'media'))
+	await page.getByTestId('add-folder').click()
+	await page.getByRole('radio', { name: 'Google Sheets' }).click()
+	await expect(page.getByTestId('choose-spreadsheet')).toBeDisabled()
+
+	await browser()
+	await page.getByTestId('sign-in-google').click()
+	await page.getByTestId('choose-spreadsheet').click()
+	await expect(page.getByTestId('chosen-spreadsheet')).toHaveText('Shots')
+	await expect(page.getByTestId('spreadsheet')).toHaveValue('picked-sheet-1234')
+	expect(oauth.pickers.at(-1).login_hint).toBe('someone@example.com')
+	await saved()
+	expect(JSON.parse(await fs.readFile(path.join(root, 'data/settings.json'), 'utf8')).config.settings.googleSheets.spreadsheetId).toBe('picked-sheet-1234')
 })
 
 test('signs in with Google and tracks in a spreadsheet from its link, still signed in next time', async () => {

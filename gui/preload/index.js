@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('tracker', {
 	signIn: provider => ipcRenderer.invoke('auth:sign-in', provider),
 	signOut: provider => ipcRenderer.invoke('auth:sign-out', provider),
 	airtableBases: () => ipcRenderer.invoke('airtable:bases'),
+	chooseSpreadsheet: () => ipcRenderer.invoke('sheets:choose'),
 	pickFolder: () => ipcRenderer.invoke('dialog:folder'),
 	wipeCache: () => ipcRenderer.invoke('cache:wipe'),
 	pickCredentials: () => ipcRenderer.invoke('dialog:credentials'),

@@ -12,6 +12,7 @@ import {
 	OAuthSession,
 	cacheFile,
 	checkForUpdates,
+	chooseSpreadsheet,
 	createTarget,
 	howToUpdate,
 	isExposed,
@@ -49,6 +50,10 @@ program.command('login')
 	.description('sign in with Google or Airtable, in your browser')
 	.argument('<service>', SERVICES.join(' or '))
 	.action(login)
+
+program.command('choose-spreadsheet')
+	.description('choose the spreadsheet from your Google Drive, in your browser')
+	.action(choose)
 
 program.command('logout')
 	.description('forget a sign in')
@@ -148,13 +153,28 @@ async function login(name) {
 	}
 }
 
+async function choose() {
+	try {
+		const { google } = await loadSignIns(signInsFile())
+		const chosen = await chooseSpreadsheet({ openBrowser, account: google?.account })
+		if(chosen)
+			logger.info('Chose %s - put this in the config\'s settings.googleSheets.spreadsheetId: %s', chosen.name, chosen.id)
+		else
+			logger.warn('No spreadsheet chosen')
+	}
+	catch(err) {
+		logger.error('%s', err.message)
+		process.exitCode = 1
+	}
+}
+
 async function logout(name) {
 	await saveSignIn(signInsFile(), service(name), undefined)
 	logger.info('Signed out of %s', name)
 }
 
 function openBrowser(url) {
-	logger.info('Sign in in your browser - if it hasn\'t opened, go to:\n%s', url)
+	logger.info('Carry on in your browser - if it hasn\'t opened, go to:\n%s', url)
 
 	// BROWSER=none, as other tools have it, for where there's no browser to open
 	if(process.env.BROWSER == 'none')

@@ -91,18 +91,24 @@ export class FakeSheets {
  * Stand-ins for Google's and Airtable's sign in, holding to what the real ones
  * insist on: the PKCE challenge, the redirect it was asked for, a code used once,
  * and refresh tokens that Airtable replaces each time. Reach it with
- * CONTENT_TRACKER_OAUTH_ENDPOINT, and its spreadsheets with GOOGLE_SHEETS_ENDPOINT_URL.
+ * CONTENT_TRACKER_OAUTH_ENDPOINT, and its spreadsheets with GOOGLE_SHEETS_ENDPOINT_URL. Its
+ * file picker, the store's page in its place, is at <url>/google/picker, for CONTENT_TRACKER_PICKER_URL:
+ * it sends straight back what's to be chosen, as the page does once something is.
  * @param {object} options .expiresIn seconds an access token lasts, .deny to refuse the sign in,
- * .grant the scopes a Google sign in is given, as someone unticking one would, .email who it's signed in as
- * @returns {Promise} .url, .sheets (a FakeSheets), .isValid(token), .refreshes & .close()
+ * .grant the scopes a Google sign in is given, as someone unticking one would, .email who it's signed in as,
+ * .pick the spreadsheet the picker chooses ({ id, name }, or null to cancel), .onlyPicked to open only
+ * spreadsheets that have been picked, as a sign in with drive.file can
+ * @returns {Promise} .url, .sheets (a FakeSheets), .isValid(token), .refreshes, .pickers (what each was opened with) & .close()
  */
-export async function fakeOAuth({ expiresIn = 3600, deny = false, grant, email = 'someone@example.com' } = {}) {
+export async function fakeOAuth({ expiresIn = 3600, deny = false, grant, email = 'someone@example.com', pick = { id: 'picked-sheet-1234', name: 'Shots' }, onlyPicked = false } = {}) {
 	const codes = new Map()
 	const accessTokens = new Set()
 	const refreshTokens = new Map()
 	const sheets = new FakeSheets()
 	let next = 1
 	let refreshes = 0
+	const picked = new Set()
+	const pickers = []
 
 	const issue = (provider, response) => {
 		const accessToken = `${provider}-access-${next++}`
@@ -131,6 +137,21 @@ export async function fakeOAuth({ expiresIn = 3600, deny = false, grant, email =
 			raw += chunk
 
 		const [, provider, step] = url.pathname.match(/^\/(google|airtable)\/(authorize|token)$/) ?? []
+
+		if(url.pathname == '/google/picker') {
+			pickers.push(Object.fromEntries(url.searchParams))
+			const back = new URL(url.searchParams.get('return'))
+			back.searchParams.set('state', url.searchParams.get('state'))
+			if(pick) {
+				picked.add(pick.id)
+				back.searchParams.set('id', pick.id)
+				back.searchParams.set('name', pick.name)
+			}
+			else
+				back.searchParams.set('cancelled', '1')
+			response.writeHead(302, { Location: back.toString() })
+			return response.end()
+		}
 
 		if(step == 'authorize') {
 			const query = url.searchParams
@@ -184,6 +205,9 @@ export async function fakeOAuth({ expiresIn = 3600, deny = false, grant, email =
 		if(url.pathname.startsWith('/v4/spreadsheets/')) {
 			if(!accessTokens.has(request.headers.authorization?.replace('Bearer ', '')))
 				return send(response, 401, { error: { code: 401, message: 'Request had invalid authentication credentials.' } })
+			const id = decodeURIComponent(url.pathname.split('/')[3].split(':')[0])
+			if(onlyPicked && !picked.has(id))
+				return send(response, 404, { error: { code: 404, message: 'Requested entity was not found.' } })
 			const { data } = await sheets.request({
 				url: 'https://sheets.googleapis.com' + request.url,
 				method: request.method,
@@ -205,6 +229,7 @@ export async function fakeOAuth({ expiresIn = 3600, deny = false, grant, email =
 		get refreshes() {
 			return refreshes
 		},
+		pickers,
 		close: () => new Promise(resolve => {
 			server.closeAllConnections()
 			server.close(resolve)

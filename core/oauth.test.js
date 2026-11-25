@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AirtableTarget, GoogleSheetsTarget } from './index.js'
-import { OAuthSession, canSignIn, signIn } from './oauth.js'
+import { OAuthSession, canSignIn, chooseSpreadsheet, signIn } from './oauth.js'
 import { spreadsheetId } from './config.js'
 import { fakeOAuth } from '../e2e/fake-google.mjs'
 import { fakeAirtable } from '../e2e/fake-airtable.mjs'
@@ -30,7 +30,12 @@ afterEach(async () => {
 
 describe('signing in', () => {
 	it('signs in with Google, and says who as', async () => {
-		const tokens = await signIn('google', { openBrowser: browser, env })
+		const opened = vi.fn(browser)
+		const tokens = await signIn('google', { openBrowser: opened, env })
+		const url = new URL(opened.mock.calls[0][0])
+		// only the spreadsheets it's given, keeping what an older version was given
+		expect(url.searchParams.get('scope').split(' ')).toEqual(['openid', 'email', 'https://www.googleapis.com/auth/drive.file'])
+		expect(url.searchParams.get('include_granted_scopes')).toBe('true')
 		expect(oauth.isValid(tokens.accessToken)).toBe(true)
 		expect(tokens.refreshToken).toMatch(/^google-refresh/)
 		expect(tokens.account).toBe('someone@example.com')
@@ -56,12 +61,12 @@ describe('signing in', () => {
 		await oauth.close()
 		oauth = await fakeOAuth({ grant: ['openid', 'email'] })
 		env.CONTENT_TRACKER_OAUTH_ENDPOINT = oauth.url
-		await expect(signIn('google', { openBrowser: browser, env })).rejects.toThrow('tick the box for Google Sheets')
+		await expect(signIn('google', { openBrowser: browser, env })).rejects.toThrow('tick the box for them')
 	})
 
-	it('signs in when the spreadsheets box was ticked', async () => {
+	it('signs in when the spreadsheets box was ticked, and with what an older version was given too', async () => {
 		await oauth.close()
-		oauth = await fakeOAuth({ grant: ['openid', 'email', 'https://www.googleapis.com/auth/spreadsheets'] })
+		oauth = await fakeOAuth({ grant: ['openid', 'email', 'https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/spreadsheets'] })
 		env.CONTENT_TRACKER_OAUTH_ENDPOINT = oauth.url
 		expect((await signIn('google', { openBrowser: browser, env })).account).toBe('someone@example.com')
 	})
@@ -141,9 +146,71 @@ describe('targets signed in', () => {
 		expect((await target.fetch('files'))[0].fields._path).toBe('/a')
 	})
 
+	it('Google Sheets says to choose a spreadsheet it hasn\'t been given, and opens it once it has', async () => {
+		await oauth.close()
+		oauth = await fakeOAuth({ onlyPicked: true })
+		env.CONTENT_TRACKER_OAUTH_ENDPOINT = env.GOOGLE_SHEETS_ENDPOINT_URL = oauth.url
+		const session = new OAuthSession('google', await signIn('google', { openBrowser: browser, env }), { env })
+		const settings = { spreadsheetId: 'never-picked-1234', foldersSheet: 'Folders', filesSheet: 'Files' }
+		const target = () => new GoogleSheetsTarget(settings, { ...files, session, env, wait: async () => {} })
+
+		await expect(target().prepare()).rejects.toThrow('choose it with Choose beside Spreadsheet')
+
+		const { id } = await chooseSpreadsheet({ openBrowser: browser, env: { ...env, CONTENT_TRACKER_PICKER_URL: `${oauth.url}/google/picker` } })
+		settings.spreadsheetId = id
+		await target().prepare()
+		expect(oauth.sheets.rows('Files')[0][0]).toBe('_path')
+	})
+
 	it('prefers a token or key to a sign in', () => {
 		const session = new OAuthSession('airtable', {}, { env })
 		const target = new AirtableTarget({ token: 'pat', base: 'appTest', foldersTable: 'F', filesTable: 'G' }, { session, env: {} })
 		expect(target.session).toBeUndefined()
+	})
+})
+
+describe('choosing a spreadsheet', () => {
+	const picker = () => ({ ...env, CONTENT_TRACKER_PICKER_URL: `${oauth.url}/google/picker` })
+
+	it('opens the picker for who is signed in, and takes back what was chosen', async () => {
+		const page = vi.fn(url => fetch(url).then(response => response.text()))
+		expect(await chooseSpreadsheet({ openBrowser: page, account: 'someone@example.com', env: picker() }))
+			.toEqual({ id: 'picked-sheet-1234', name: 'Shots' })
+		const [opened] = oauth.pickers
+		expect(opened.login_hint).toBe('someone@example.com')
+		expect(new URL(opened.return)).toMatchObject({ protocol: 'http:', hostname: '127.0.0.1', pathname: '/picked' })
+		expect(await page.mock.results[0].value).toContain('Chose Shots')
+	})
+
+	it('opens the store\'s page, unless told otherwise', async () => {
+		const opened = vi.fn(url => fetch(new URL(url).searchParams.get('return') + '?cancelled=1&state=' + new URL(url).searchParams.get('state')))
+		await chooseSpreadsheet({ openBrowser: opened, env: {} })
+		expect(opened.mock.calls[0][0]).toMatch(/^https:\/\/store\.generativenoise\.com\/tools\/content-tracker\/choose-spreadsheet\/\?return=/)
+	})
+
+	it('says nothing was chosen when the picker was closed', async () => {
+		await oauth.close()
+		oauth = await fakeOAuth({ pick: null })
+		expect(await chooseSpreadsheet({ openBrowser: browser, env: picker() })).toBeNull()
+	})
+
+	it('ignores a choice it did not ask for, or that is not a spreadsheet', async () => {
+		const back = (url, search) => fetch(new URL(url).searchParams.get('return') + search(new URL(url).searchParams.get('state')))
+		await expect(chooseSpreadsheet({ openBrowser: url => back(url, () => '?id=someone-elses-1234&state=wrong'), env: picker() })).rejects.toThrow('expired')
+		await expect(chooseSpreadsheet({ openBrowser: url => back(url, state => `?id=${encodeURIComponent('../../evil')}&state=${state}`), env: picker() })).rejects.toThrow('isn\'t a spreadsheet')
+	})
+
+	it('shows the name it was given as text, never as part of the page', async () => {
+		await oauth.close()
+		oauth = await fakeOAuth({ pick: { id: 'picked-sheet-1234', name: '<script>alert(1)</script>' } })
+		const page = vi.fn(url => fetch(url).then(response => response.text()))
+		await chooseSpreadsheet({ openBrowser: page, env: picker() })
+		const html = await page.mock.results[0].value
+		expect(html).not.toContain('<script>')
+		expect(html).toContain('&#60;script&#62;')
+	})
+
+	it('gives up after a while', async () => {
+		await expect(chooseSpreadsheet({ openBrowser: () => {}, env: picker(), timeout: 50 })).rejects.toThrow('took too long')
 	})
 })
