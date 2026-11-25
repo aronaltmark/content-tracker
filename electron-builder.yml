@@ -16,6 +16,27 @@ mac:
   # it lives in the menu bar, with no Dock icon
   extendInfo:
     LSUIElement: true
+  # signed ad hoc, all of it: unsigned, or with only the linker's signature on the
+  # program, a downloaded copy is "damaged" with no way to open it. Ad hoc, it's
+  # unverified, which Privacy & Security's Open Anyway opens
+  identity: '-'
+  # the hardened runtime is for notarising, and ad hoc it can stop the app opening
+  hardenedRuntime: false
+# the app and Applications side by side, in the middle of the window: the default puts
+# them low, below newer macOS's taller toolbar
+dmg:
+  # its own, from build/dmg-background.svg by npm run icons, with the arrow between them
+  background: build/background.tiff
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 140
+      y: 145
+    - x: 400
+      y: 145
+      type: link
+      path: /Applications
 win:
   target: nsis
 nsis:

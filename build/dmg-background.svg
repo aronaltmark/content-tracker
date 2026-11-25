@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="380" viewBox="0 0 540 380">
+	<!-- the DMG's window: the app and Applications either side of the arrow, at the height electron-builder.yml puts them -->
+	<rect width="540" height="380" fill="#ececec"/>
+	<path d="M246 134h20v-18l29 29-29 29v-18h-20z" fill="none" stroke="#5c5c5c" stroke-width="1.4" stroke-dasharray="4 3" stroke-linejoin="round"/>
+</svg>

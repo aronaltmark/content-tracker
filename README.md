@@ -37,7 +37,7 @@ If you already have a config file from the command line, **Import settings** in 
 
 When there's a newer version, the window and the menu say so: **Update and restart** downloads it from GitHub, checks it's what the release says it is, installs it and opens it again. On a Mac that works once it's in Applications; opened from anywhere else, it opens the new version for you to drag in.
 
-_The app isn't signed yet, so the first time you open it on a Mac right-click it and choose Open, and on Windows choose More info then Run anyway._
+_The app isn't signed by Apple or Microsoft yet. The first time you open it on a Mac, choose Done, then **Open Anyway** in System Settings > Privacy & Security. On Windows, choose More info, then Run anyway._
 
 ### Command line
 

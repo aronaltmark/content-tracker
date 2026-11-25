@@ -1,8 +1,10 @@
+// Also build/dmg-background.svg as build/background.tiff, the Mac DMG's window, at 1x & 2x.
 // Renders build/icon.svg as build/icon.png, which electron-builder makes the
 // Mac & Windows icons from, and build/tray.svg as the menu bar's icon at 1x
 // and 2x, after writing the folder's outline into both (scripts/icon-outline.mjs). Run
 // again after changing either SVG or the outline: npm run icons
-import { readFileSync, writeFileSync } from 'fs'
+import { execFileSync } from 'child_process'
+import { readFileSync, rmSync, writeFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 import { folderOutline } from './icon-outline.mjs'
@@ -33,3 +35,14 @@ for(const [scale, suffix] of [[1, ''], [2, '@2x']])
 		.resize(18 * scale, 18 * scale)
 		.png()
 		.toFile(file(`trayTemplate${suffix}.png`))
+
+// the DMG's window, at both sizes in the one file, which is how the Finder takes a retina background
+const background = fileURLToPath(new URL('../build/background', import.meta.url))
+for(const [scale, suffix] of [[1, ''], [2, '@2x']])
+	await sharp(file('dmg-background.svg'), { density: 72 * scale })
+		.resize(540 * scale, 380 * scale)
+		.png()
+		.toFile(`${background}${suffix}.png`)
+execFileSync('tiffutil', ['-cathidpicheck', `${background}.png`, `${background}@2x.png`, '-out', `${background}.tiff`])
+for(const suffix of ['', '@2x'])
+	rmSync(`${background}${suffix}.png`)
