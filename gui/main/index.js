@@ -20,6 +20,9 @@ if(process.env.CONTENT_TRACKER_PASSWORD_STORE)
 if(!app.requestSingleInstanceLock())
 	app.exit()
 
+// for the tests: its windows open behind whatever's in front, never taking it over
+const inBackground = process.env.CONTENT_TRACKER_IN_BACKGROUND == '1'
+
 const devServer = process.env.ELECTRON_RENDERER_URL
 const pageFile = path.join(import.meta.dirname, '../renderer/index.html')
 
@@ -47,11 +50,13 @@ function showWindow(view) {
 	if(window) {
 		if(view)
 			send('app:show', view)
-		window.show()
+		inBackground ? window.showInactive() : window.show()
 	}
 	else
 		createWindow(view)
 
+	if(inBackground)
+		return
 	// with no Dock icon, it's not in front until it's asked to be
 	app.focus({ steal: true })
 	window.focus()
@@ -64,6 +69,7 @@ function createWindow(view) {
 		minWidth: 640,
 		minHeight: 480,
 		title: 'Content Tracker',
+		show: !inBackground,
 		webPreferences: {
 			preload: path.join(import.meta.dirname, '../preload/index.cjs'),
 			contextIsolation: true,
@@ -88,6 +94,9 @@ function createWindow(view) {
 		window.loadURL(devServer)
 	else
 		window.loadFile(pageFile)
+
+	if(inBackground)
+		window.showInactive()
 
 	window.on('closed', () => window = undefined)
 }
@@ -118,7 +127,8 @@ updater.on('state', state => {
 
 async function confirmDeletes({ table, count, total }) {
 	// it may be running from the menu bar with no window open, and this mustn't go unseen
-	app.focus({ steal: true })
+	if(!inBackground)
+		app.focus({ steal: true })
 	const options = {
 		type: 'warning',
 		message: `Remove ${count} of the ${total} ${table}?`,

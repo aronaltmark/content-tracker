@@ -106,8 +106,9 @@ async function draw(app, work, name, html, { width, height }) {
 	const [page] = await Promise.all([
 		app.waitForEvent('window'),
 		app.evaluate(({ BrowserWindow }, { file, width, height }) => {
-			const window = new BrowserWindow({ width, height, useContentSize: true, frame: false, transparent: true, hasShadow: false, show: true })
+			const window = new BrowserWindow({ width, height, useContentSize: true, frame: false, transparent: true, hasShadow: false, show: false })
 			window.loadFile(file)
+			window.showInactive()
 		}, { file, width, height })
 	])
 	await page.waitForLoadState('load')
@@ -318,6 +319,8 @@ const app = await electron.launch({
 	env: {
 		...withoutRunAsNode(process.env),
 		CONTENT_TRACKER_USER_DATA: path.join(work, 'data'),
+		// behind whatever's in front, so taking them doesn't take over the screen
+		CONTENT_TRACKER_IN_BACKGROUND: '1',
 		CONTENT_TRACKER_NO_UPDATE_CHECK: '1',
 		CONTENT_TRACKER_OAUTH_ENDPOINT: oauth.url,
 		AIRTABLE_ENDPOINT_URL: airtable.url,

@@ -28,6 +28,8 @@ const openApp = async (env = {}) => {
 			CONTENT_TRACKER_GOOGLE_CLIENT_SECRET: 'google-secret',
 			CONTENT_TRACKER_AIRTABLE_CLIENT_ID: 'airtable-client',
 			CONTENT_TRACKER_USER_DATA: path.join(root, 'data'),
+			// behind whatever's in front, so the tests don't take over the screen
+			CONTENT_TRACKER_IN_BACKGROUND: '1',
 			HOME: root,
 			LOCALAPPDATA: root,
 			// Playwright keeps sign ins in plain text, which the app won't keep them in
