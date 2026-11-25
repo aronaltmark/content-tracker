@@ -45,7 +45,7 @@ export class AirtableTarget {
 		this.session = this.#token ? undefined : session
 
 		if(!this.#token && !this.session)
-			throw new Error('Not signed in to Airtable - sign in, or set settings.airtable.token or AIRTABLE_API_KEY')
+			throw new Error('Not signed in to Airtable - sign in via settings, or set settings.airtable.token or AIRTABLE_API_KEY')
 
 		this.#tables.folders.id = settings.foldersTable
 		this.#tables.files.id = settings.filesTable
@@ -102,6 +102,13 @@ export class AirtableTarget {
 			offset = page.offset ?? ''
 		} while(offset)
 		return bases
+	}
+
+	/**
+	 * @returns {Promise} the base's name, or null if it can't see it
+	 */
+	async name() {
+		return (await this.bases()).find(base => base.id == this.settings.base)?.name ?? null
 	}
 
 	#base() {

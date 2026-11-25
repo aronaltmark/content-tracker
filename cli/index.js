@@ -158,7 +158,7 @@ async function choose() {
 		const { google } = await loadSignIns(signInsFile())
 		const chosen = await chooseSpreadsheet({ openBrowser, account: google?.account })
 		if(chosen)
-			logger.info('Chose %s - put this in the config\'s settings.googleSheets.spreadsheetId: %s', chosen.name, chosen.id)
+			logger.info('Selected %s - put this in the config\'s settings.googleSheets.spreadsheetId: %s', chosen.name, chosen.id)
 		else
 			logger.warn('No spreadsheet chosen')
 	}

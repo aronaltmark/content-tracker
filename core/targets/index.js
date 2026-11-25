@@ -7,6 +7,7 @@ import { GoogleSheetsTarget } from './google-sheets.js'
  * - .fetch(table) gets the records of 'folders' or 'files'
  * - .apply(table, diffs) makes the changes, returning how many
  * - .parentValue(folder) what a record's _parent holds for that remote folder
+ * - .name() the base's or spreadsheet's name, to show rather than its ID
  * @param {object} config prepared config
  * @param {object} options passed to the target, with .sessions, the sign ins by provider
  * @returns {object} target

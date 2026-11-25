@@ -189,9 +189,10 @@ function logDiffs(logger, table, diffs, dryRun) {
  * @param {function} run async, its failures are passed to onError & it's run again
  * @param {number} frequency seconds between runs, 0 for just the once
  * @param {function} onError
+ * @param {function} onWait (until) as it waits for the next run, until then (ms since 1970)
  * @returns {object} .stop(), and .done, a Promise of when it has finished
  */
-export function repeat(run, frequency, onError = () => {}) {
+export function repeat(run, frequency, onError = () => {}, onWait = () => {}) {
 	let stopped = false
 	let wake = () => {}
 
@@ -206,6 +207,7 @@ export function repeat(run, frequency, onError = () => {}) {
 
 			if(frequency > 0 && !stopped)
 				await new Promise(resolve => {
+					onWait(Date.now() + frequency * 1000)
 					const timer = setTimeout(resolve, frequency * 1000)
 					wake = () => {
 						clearTimeout(timer)

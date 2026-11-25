@@ -608,6 +608,18 @@ describe('repeat', () => {
 		await looping.done
 		expect(onError).toHaveBeenCalledTimes(1)
 	})
+
+	it('says when it will next run, as it waits', async () => {
+		const onWait = vi.fn()
+		const before = Date.now()
+		const looping = repeat(() => {}, 60, undefined, onWait)
+		await vi.waitFor(() => expect(onWait).toHaveBeenCalled())
+		looping.stop()
+		await looping.done
+		const until = onWait.mock.calls[0][0]
+		expect(until).toBeGreaterThanOrEqual(before + 60000)
+		expect(until).toBeLessThanOrEqual(Date.now() + 60000)
+	})
 })
 
 describe('sizes', () => {

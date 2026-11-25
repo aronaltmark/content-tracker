@@ -18,9 +18,9 @@ export const PROVIDERS = {
 		scopes: ['openid', 'email', DRIVE_FILE],
 		// Google lets people untick this on its consent screen, and nothing works without it
 		required: { [DRIVE_FILE]: 'the spreadsheets you choose - sign in again and tick the box for them' },
-		// offline for a refresh token, and consent so there's one every time; anyone who gave
-		// an older version all their spreadsheets keeps that, so the one they use still opens
-		params: { access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true' },
+		// offline for a refresh token, and consent so there's one every time; not what an older
+		// version was given (all their spreadsheets), which Google warns about, as it's no longer asked for
+		params: { access_type: 'offline', prompt: 'consent' },
 		// Google lets a desktop app take the reply on any port
 		host: '127.0.0.1',
 		port: 0,
@@ -83,9 +83,13 @@ const page = (title, text) => `<!doctype html><meta charset="utf-8"><title>${esc
  * @param {string} state what the answer has to come back with
  * @param {function} take (searchParams) => { value, title, text }: what came back, and
  * what the page says of it, or throws to say why it can't be used
- * @returns {Promise} .redirectUri, .answer (a Promise of the value) & .close()
+ * @param {AbortSignal} signal stops waiting, as when the browser's tab was closed and it's asked again
+ * @returns {Promise} .redirectUri, .answer (a Promise of the value, or of a CANCELLED error) & .close()
  */
-async function listen(details, state, timeout, take) {
+// what waiting for the browser fails with when it's been stopped, rather than gone wrong
+export const CANCELLED = 'CANCELLED'
+
+async function listen(details, state, timeout, take, signal) {
 	let settle
 	const answer = new Promise((resolve, reject) => settle = { resolve, reject })
 	// the answer can come back refused while the browser's still opening, before it's awaited
@@ -140,12 +144,17 @@ async function listen(details, state, timeout, take) {
 	}
 
 	const timer = setTimeout(() => settle.reject(new Error(details.tooLong)), timeout)
+	const cancel = () => settle.reject(Object.assign(new Error('Cancelled'), { code: CANCELLED }))
+	if(signal?.aborted)
+		cancel()
+	signal?.addEventListener('abort', cancel, { once: true })
 
 	return {
 		redirectUri: `http://${details.host}:${port}${details.path}`,
 		answer,
 		close() {
 			clearTimeout(timer)
+			signal?.removeEventListener('abort', cancel)
 			servers.forEach(server => {
 				server.closeAllConnections()
 				server.close()
@@ -202,9 +211,10 @@ async function accountOf(details, answer, http, env) {
  * @param {string} name 'google' or 'airtable'
  * @param {object} options
  * @param {function} options.openBrowser (url) => opens it
+ * @param {AbortSignal} options.signal stops waiting for the browser, failing with .code CANCELLED
  * @returns {Promise} tokens to keep: .accessToken, .refreshToken, .expiresAt & .account
  */
-export async function signIn(name, { openBrowser, env = process.env, http = globalThis.fetch, timeout = SIGN_IN_TIMEOUT } = {}) {
+export async function signIn(name, { openBrowser, signal, env = process.env, http = globalThis.fetch, timeout = SIGN_IN_TIMEOUT } = {}) {
 	const details = provider(name, env)
 	if(!details.clientId)
 		throw new Error(`Signing in with ${details.name} isn't set up in this version`)
@@ -215,7 +225,7 @@ export async function signIn(name, { openBrowser, env = process.env, http = glob
 		if(params.get('error'))
 			throw new Error(`${details.name} said ${params.get('error_description') ?? params.get('error')}.`)
 		return { value: params.get('code'), title: 'Signed in', text: 'You can close this tab and go back to Content Tracker.' }
-	})
+	}, signal)
 
 	try {
 		const url = new URL(details.authorizeUrl)
@@ -259,9 +269,10 @@ export async function signIn(name, { openBrowser, env = process.env, http = glob
  * @param {object} options
  * @param {function} options.openBrowser (url) => opens it
  * @param {string} options.account who's signed in, for Google to offer first
+ * @param {AbortSignal} options.signal stops waiting for the browser, failing with .code CANCELLED
  * @returns {Promise} .id & .name of the spreadsheet, or null if none was chosen
  */
-export async function chooseSpreadsheet({ openBrowser, account = '', env = process.env, timeout = SIGN_IN_TIMEOUT } = {}) {
+export async function chooseSpreadsheet({ openBrowser, account = '', signal, env = process.env, timeout = SIGN_IN_TIMEOUT } = {}) {
 	const state = base64url(randomBytes(16))
 	const details = {
 		name: 'Google',
@@ -278,8 +289,8 @@ export async function chooseSpreadsheet({ openBrowser, account = '', env = proce
 		if(!/^[\w-]{10,200}$/.test(id))
 			throw new Error('That isn\'t a spreadsheet - try again from Content Tracker.')
 		const name = params.get('name') || 'the spreadsheet'
-		return { value: { id, name }, title: `Chose ${name}`, text: 'You can close this tab and go back to Content Tracker.' }
-	})
+		return { value: { id, name }, title: `Selected ${name}`, text: 'You can close this tab and go back to Content Tracker.' }
+	}, signal)
 
 	try {
 		const url = new URL(env.CONTENT_TRACKER_PICKER_URL || PICKER_URL)

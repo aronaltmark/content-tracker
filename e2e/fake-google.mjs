@@ -6,6 +6,7 @@ export class FakeSheets {
 	sheets = new Map()
 	nextId = 1
 	requests = []
+	title = 'Shots'
 
 	constructor(tabs = {}) {
 		for(const [name, rows] of Object.entries(tabs))
@@ -40,7 +41,7 @@ export class FakeSheets {
 		this.requests.push({ method, path, search, data })
 
 		if(path == '' && method == 'GET')
-			return { data: { sheets: [...this.sheets.values()].map(({ properties }) => ({ properties })) } }
+			return { data: { properties: { title: this.title }, sheets: [...this.sheets.values()].map(({ properties }) => ({ properties })) } }
 
 		if(path == ':batchUpdate') {
 			const replies = data.requests.map(request => {
@@ -98,7 +99,8 @@ export class FakeSheets {
  * .grant the scopes a Google sign in is given, as someone unticking one would, .email who it's signed in as,
  * .pick the spreadsheet the picker chooses ({ id, name }, or null to cancel), .onlyPicked to open only
  * spreadsheets that have been picked, as a sign in with drive.file can
- * @returns {Promise} .url, .sheets (a FakeSheets), .isValid(token), .refreshes, .pickers (what each was opened with) & .close()
+ * @returns {Promise} .url, .sheets (a FakeSheets), .isValid(token), .refreshes, .pickers (what each was opened with),
+ * .created (the spreadsheets made) & .close()
  */
 export async function fakeOAuth({ expiresIn = 3600, deny = false, grant, email = 'someone@example.com', pick = { id: 'picked-sheet-1234', name: 'Shots' }, onlyPicked = false } = {}) {
 	const codes = new Map()
@@ -109,6 +111,7 @@ export async function fakeOAuth({ expiresIn = 3600, deny = false, grant, email =
 	let refreshes = 0
 	const picked = new Set()
 	const pickers = []
+	const created = []
 
 	const issue = (provider, response) => {
 		const accessToken = `${provider}-access-${next++}`
@@ -202,6 +205,20 @@ export async function fakeOAuth({ expiresIn = 3600, deny = false, grant, email =
 			}
 		}
 
+		// a new spreadsheet, which a sign in with drive.file can open as it made it
+		if(url.pathname == '/v4/spreadsheets' && request.method == 'POST') {
+			if(!accessTokens.has(request.headers.authorization?.replace('Bearer ', '')))
+				return send(response, 401, { error: { code: 401, message: 'Request had invalid authentication credentials.' } })
+			const { properties, sheets: tabs = [] } = JSON.parse(raw)
+			const id = `made-sheet-${next++}`
+			picked.add(id)
+			created.push({ id, title: properties.title, sheets: tabs.map(tab => tab.properties.title) })
+			sheets.title = properties.title
+			for(const tab of tabs)
+				sheets.addSheet(tab.properties.title)
+			return send(response, 200, { spreadsheetId: id, properties })
+		}
+
 		if(url.pathname.startsWith('/v4/spreadsheets/')) {
 			if(!accessTokens.has(request.headers.authorization?.replace('Bearer ', '')))
 				return send(response, 401, { error: { code: 401, message: 'Request had invalid authentication credentials.' } })
@@ -230,6 +247,7 @@ export async function fakeOAuth({ expiresIn = 3600, deny = false, grant, email =
 			return refreshes
 		},
 		pickers,
+		created,
 		close: () => new Promise(resolve => {
 			server.closeAllConnections()
 			server.close(resolve)

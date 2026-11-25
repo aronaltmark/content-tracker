@@ -28,7 +28,7 @@ export const configSchema = {
 					additionalProperties: false,
 					properties: {
 						rootPath: {
-							description: 'Taken off the start of every path, so it doesn\'t matter where the folders are on each computer.',
+							description: 'Removed from the start of every path, so it doesn\'t matter where the folders are mounted on each computer.',
 							type: 'string',
 							default: ''
 						},

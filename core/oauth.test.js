@@ -33,9 +33,9 @@ describe('signing in', () => {
 		const opened = vi.fn(browser)
 		const tokens = await signIn('google', { openBrowser: opened, env })
 		const url = new URL(opened.mock.calls[0][0])
-		// only the spreadsheets it's given, keeping what an older version was given
+		// only the spreadsheets it's given, and not what an older version was given
 		expect(url.searchParams.get('scope').split(' ')).toEqual(['openid', 'email', 'https://www.googleapis.com/auth/drive.file'])
-		expect(url.searchParams.get('include_granted_scopes')).toBe('true')
+		expect(url.searchParams.has('include_granted_scopes')).toBe(false)
 		expect(oauth.isValid(tokens.accessToken)).toBe(true)
 		expect(tokens.refreshToken).toMatch(/^google-refresh/)
 		expect(tokens.account).toBe('someone@example.com')
@@ -130,6 +130,7 @@ describe('targets signed in', () => {
 		oauth.expire()
 		expect(await target.bases()).toEqual([{ id: 'appTest', name: 'Show content' }])
 		expect(oauth.refreshes).toBe(1)
+		expect(await target.name()).toBe('Show content')
 	})
 
 	it('Google Sheets works with a sign in, from the spreadsheet\'s link', async () => {
@@ -144,6 +145,7 @@ describe('targets signed in', () => {
 
 		expect(settings.spreadsheetId).toBe('1aBc-d_E')
 		expect((await target.fetch('files'))[0].fields._path).toBe('/a')
+		expect(await target.name()).toBe('Shots')
 	})
 
 	it('Google Sheets says to choose a spreadsheet it hasn\'t been given, and opens it once it has', async () => {
@@ -154,7 +156,7 @@ describe('targets signed in', () => {
 		const settings = { spreadsheetId: 'never-picked-1234', foldersSheet: 'Folders', filesSheet: 'Files' }
 		const target = () => new GoogleSheetsTarget(settings, { ...files, session, env, wait: async () => {} })
 
-		await expect(target().prepare()).rejects.toThrow('choose it with Choose beside Spreadsheet')
+		await expect(target().prepare()).rejects.toThrow('choose it with Choose from Drive')
 
 		const { id } = await chooseSpreadsheet({ openBrowser: browser, env: { ...env, CONTENT_TRACKER_PICKER_URL: `${oauth.url}/google/picker` } })
 		settings.spreadsheetId = id
@@ -179,7 +181,7 @@ describe('choosing a spreadsheet', () => {
 		const [opened] = oauth.pickers
 		expect(opened.login_hint).toBe('someone@example.com')
 		expect(new URL(opened.return)).toMatchObject({ protocol: 'http:', hostname: '127.0.0.1', pathname: '/picked' })
-		expect(await page.mock.results[0].value).toContain('Chose Shots')
+		expect(await page.mock.results[0].value).toContain('Selected Shots')
 	})
 
 	it('opens the store\'s page, unless told otherwise', async () => {

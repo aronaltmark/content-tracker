@@ -89,6 +89,31 @@ function signedInRequest(session, http) {
 	}
 }
 
+/**
+ * Make a new spreadsheet in the signed in Google Drive, which a sign in with drive.file
+ * can then open, as it made it
+ * @param {object} options
+ * @param {OAuthSession} options.session the Google sign in
+ * @param {string} options.title its name
+ * @param {string[]} options.sheets the tabs to start with, so there's no Sheet1 left over
+ * @returns {Promise} of { id, name }
+ */
+export async function createSpreadsheet({ session, title, sheets = [], http = globalThis.fetch, env = process.env }) {
+	const request = signedInRequest(session, http)
+	const url = (env.GOOGLE_SHEETS_ENDPOINT_URL || ENDPOINT) + API
+	try {
+		const { data } = await request({
+			url,
+			method: 'POST',
+			data: { properties: { title }, sheets: sheets.map(name => ({ properties: { title: name } })) }
+		})
+		return { id: data.spreadsheetId, name: data.properties?.title ?? title }
+	}
+	catch(err) {
+		throw new Error(`Google Sheets couldn't make the spreadsheet - ${err.message}`, { cause: err })
+	}
+}
+
 export class GoogleSheetsTarget {
 	#sheets = { folders: {}, files: {} }
 
@@ -121,7 +146,7 @@ export class GoogleSheetsTarget {
 			this.signedIn = true
 		}
 		else
-			throw new Error('Not signed in to Google - sign in, or set settings.googleSheets.credentials or GOOGLE_APPLICATION_CREDENTIALS')
+			throw new Error('Not signed in to Google - sign in via settings, or set settings.googleSheets.credentials or GOOGLE_APPLICATION_CREDENTIALS')
 
 		this.#sheets.folders.name = settings.foldersSheet
 		this.#sheets.files.name = settings.filesSheet
@@ -142,10 +167,17 @@ export class GoogleSheetsTarget {
 					continue
 				}
 				if(this.signedIn && (status == 403 || status == 404))
-					throw new Error('Content Tracker can\'t open that spreadsheet - choose it with Choose beside Spreadsheet in the app, or tracker choose-spreadsheet', { cause: err })
+					throw new Error('Content Tracker can\'t open that spreadsheet - choose it with Choose from Drive in the app, or tracker choose-spreadsheet', { cause: err })
 				throw new Error(`Google Sheets said ${status ?? ''} - ${err.response?.data?.error?.message ?? err.message}`, { cause: err })
 			}
 		}
+	}
+
+	/**
+	 * @returns {Promise} the spreadsheet's name
+	 */
+	async name() {
+		return (await this.#call('?fields=properties.title')).properties?.title ?? null
 	}
 
 	#update(requests) {

@@ -206,7 +206,7 @@ test('signs in with Google, chooses a spreadsheet, then tracks in it', async () 
 
 		const chose = await inBrowser(['choose-spreadsheet'], env, /https?:\/\/\S+picker\S+/)
 		expect(chose.code).toBe(0)
-		expect(chose.output).toContain('Chose Shots')
+		expect(chose.output).toContain('Selected Shots')
 		expect(chose.output).toContain('picked-sheet-1234')
 		expect(oauth.pickers[0].login_hint).toBe('someone@example.com')
 
