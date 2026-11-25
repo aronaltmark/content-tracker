@@ -9,7 +9,7 @@ files:
 beforePack: scripts/before-pack.cjs
 # ffprobe is run as a program, so it can't stay inside the archive
 asarUnpack:
-  - node_modules/@ffprobe-installer/**
+  - node_modules/@generativenoise/ffprobe-*/**
 mac:
   target: dmg
   category: public.app-category.productivity

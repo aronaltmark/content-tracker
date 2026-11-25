@@ -33,7 +33,7 @@
     "icons": "node scripts/icons.mjs",
     "schema": "node scripts/schema.mjs",
     "readme": "node scripts/readme.mjs",
-    "dist:mac": "npm install --no-save --force @ffprobe-installer/darwin-x64@5.1.0 @ffprobe-installer/darwin-arm64@5.0.1 && electron-vite build && electron-builder --mac --arm64 --x64",
+    "dist:mac": "node scripts/ffprobe-install.mjs darwin-x64 darwin-arm64 && electron-vite build && electron-builder --mac --arm64 --x64",
     "screenshots": "electron-vite build && node scripts/screenshots.mjs",
     "prepare": "node scripts/oauth-secret.mjs"
   },
@@ -55,7 +55,6 @@
   },
   "homepage": "https://github.com/garethnunns/content-tracker#readme",
   "dependencies": {
-    "@ffprobe-installer/ffprobe": "^2.1.2",
     "@inquirer/confirm": "^6.4.0",
     "chalk": "^6.0.1",
     "commander": "^12.1.0",
@@ -64,6 +63,13 @@
     "p-queue": "^10.0.0",
     "picomatch": "^4.0.7",
     "winston": "^3.19.0"
+  },
+  "optionalDependencies": {
+    "@generativenoise/ffprobe-darwin-arm64": "9.1.0",
+    "@generativenoise/ffprobe-darwin-x64": "9.1.0",
+    "@generativenoise/ffprobe-linux-arm64": "9.1.0",
+    "@generativenoise/ffprobe-linux-x64": "9.1.0",
+    "@generativenoise/ffprobe-win32-x64": "9.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -6,15 +6,15 @@ describe('licences', () => {
 
 	it('lists what the app ships, with Electron and what the page bundles', () => {
 		const names = list.map(entry => entry.name)
-		expect(names).toEqual(expect.arrayContaining(['electron', 'vue', 'marked', 'picomatch', '@ffprobe-installer/ffprobe']))
+		expect(names).toEqual(expect.arrayContaining(['electron', 'vue', 'marked', 'picomatch']))
 		expect(names).not.toContain('vitest')
 		expect(names).not.toContain('@vue/compiler-sfc')
 	})
 
 	it('only lists ffprobe for the platform it\'s built for', () => {
 		const names = licences(undefined, 'win32').map(entry => entry.name)
-		expect(names).toContain('@ffprobe-installer/win32-x64')
-		expect(names).not.toContain('@ffprobe-installer/darwin-arm64')
+		expect(names).toContain('@generativenoise/ffprobe-win32-x64')
+		expect(names).not.toContain('@generativenoise/ffprobe-darwin-arm64')
 	})
 
 	it('ships nothing the GPL can\'t include', () => {

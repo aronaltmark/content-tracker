@@ -148,3 +148,6 @@ playwright-report/
 
 # Google's client secret, written by npm install (scripts/oauth-secret.mjs)
 core/oauth-secret.js
+
+# made by scripts/ffprobe-packages.mjs
+packages/

@@ -40,7 +40,7 @@ const REPOSITORY = 'https://github.com/garethnunns/content-tracker'
 		<details class="libraries">
 			<summary>Open source libraries</summary>
 			<p class="note">
-				Including <a href="https://ffmpeg.org">FFmpeg</a>'s ffprobe, under the LGPL 2.1 on Apple Silicon and the GPL 3 elsewhere,
+				Including <a href="https://ffmpeg.org">FFmpeg</a>'s ffprobe 9.1, under the GPL 3,
 				and <a href="https://www.electronjs.org">Electron</a>, with the Chromium and Node.js it's built on.
 			</p>
 			<table data-test="licences">

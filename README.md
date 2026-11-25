@@ -514,6 +514,6 @@ Copyright (C) 2024-2026 Generative Noise
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See [LICENSE](LICENSE) for the details.
 
-The app includes [FFmpeg](https://ffmpeg.org)'s ffprobe 4.4.1, from [ffprobe-installer](https://github.com/SavageCore/node-ffprobe-installer), under the LGPL 2.1 on Apple Silicon and the GPL 3 elsewhere. Its source is at [ffmpeg.org](https://ffmpeg.org/releases/ffmpeg-4.4.1.tar.xz).
+Content Tracker includes [FFmpeg](https://ffmpeg.org)'s ffprobe 9.1, under the GPL 3, in the `@generativenoise/ffprobe-<platform>-<arch>` packages: unchanged builds by [Martin Riedl](https://ffmpeg.martin-riedl.de) for Mac and Linux and [Gyan Doshi](https://www.gyan.dev/ffmpeg/builds/) for Windows, each pinned by its sha256 in `scripts/ffprobe-packages.mjs`. FFmpeg's source is at [ffmpeg.org](https://ffmpeg.org/releases/ffmpeg-9.1.tar.xz).
 
 </details>

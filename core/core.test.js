@@ -3,7 +3,7 @@ import * as os from 'os'
 import * as path from 'path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { FoundTimes, MetadataCache, configProblems, defaultConfig, diffRecords, finderSize, isAllowed, parseRegex, parseRule, prepareConfig, renameOld, repeat, scan, syncOnce, writeTemplate } from './index.js'
-import { mediaValues } from './probe.js'
+import { ffprobePath, mediaValues } from './probe.js'
 import { configSchema } from './config-schema.js'
 import { projectPath } from './scanner.js'
 
@@ -231,6 +231,13 @@ describe('media values', () => {
 		expect(alpha('rgba')).toBe(true)
 		expect(alpha('ya8')).toBe(true)
 		expect(alpha('gbrap12le')).toBe(true)
+	})
+
+	it('finds the ffprobe npm installed for this computer, and says when there isn\'t one', async () => {
+		const found = ffprobePath()
+		expect(found).toContain(`@generativenoise${path.sep}ffprobe-${process.platform}-${process.arch}`)
+		await expect(fs.access(found)).resolves.toBeUndefined()
+		expect(() => ffprobePath('plan9', 'x64')).toThrow('There\'s no ffprobe for plan9-x64')
 	})
 
 	it('copes with what ffprobe leaves out', () => {

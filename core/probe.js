@@ -1,5 +1,6 @@
 import { execFile } from 'child_process'
 import { createRequire } from 'module'
+import * as path from 'path'
 import { promisify } from 'util'
 
 const run = promisify(execFile)
@@ -11,13 +12,21 @@ const MAX_OUTPUT = 16 * 1024 * 1024
 const ALPHA_FORMATS = /^(yuva|rgba|bgra|argb|abgr|ya\d|gbrap|pal8)/
 
 /**
- * Where ffprobe is, for this computer. It can't run from inside an Electron
- * asar so it's taken from the unpacked copy that sits beside it.
+ * Where ffprobe is, for this computer: in its @generativenoise/ffprobe-<platform>-<arch>
+ * package, the one npm installed of them. It can't run from inside an Electron asar, so
+ * it's taken from the unpacked copy that sits beside it.
  * @returns {string} path to the binary
  */
-export function ffprobePath() {
-	const require = createRequire(import.meta.url)
-	return require('@ffprobe-installer/ffprobe').path.replace('app.asar', 'app.asar.unpacked')
+export function ffprobePath(platform = process.platform, arch = process.arch) {
+	const name = `@generativenoise/ffprobe-${platform}-${arch}`
+	let folder
+	try {
+		folder = path.dirname(createRequire(import.meta.url).resolve(`${name}/package.json`))
+	}
+	catch {
+		throw new Error(`There's no ffprobe for ${platform}-${arch} - install ${name}, or turn off media metadata`)
+	}
+	return path.join(folder, 'bin', platform == 'win32' ? 'ffprobe.exe' : 'ffprobe').replace('app.asar', 'app.asar.unpacked')
 }
 
 /**
