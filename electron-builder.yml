@@ -7,6 +7,7 @@ files:
   - out/**
   - package.json
 beforePack: scripts/before-pack.cjs
+afterPack: scripts/after-pack.cjs
 # ffprobe is run as a program, so it can't stay inside the archive
 asarUnpack:
   - node_modules/@generativenoise/ffprobe-*/**
