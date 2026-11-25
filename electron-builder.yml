@@ -27,4 +27,7 @@ linux:
   # its own name, as the package's has an @ and a / that can't be in a file's
   executableName: content-tracker
   category: Utility
+  # x64, as the others are named and the updater looks for, where an AppImage's own name is
+  # x86_64: only x64 is built for Linux
+  artifactName: Content-Tracker-${version}-linux-x64.${ext}
 publish: null
