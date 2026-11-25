@@ -1,7 +1,7 @@
 // Finding out whether there's a newer version: on npm for the command line, and
 // as a GitHub release, with its installers, for the app
 
-export const PACKAGE = '@garethnunns/content-tracker'
+export const PACKAGE = '@generativenoise/content-tracker'
 export const REPOSITORY = 'garethnunns/content-tracker'
 
 const TIMEOUT = 5000

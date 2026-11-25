@@ -22,8 +22,8 @@ export async function fakeReleases({ version = '99.0.0', tampered = false } = {}
 	const server = createServer((request, response) => {
 		const path = decodeURIComponent(new URL(request.url, 'http://localhost').pathname)
 
-		if(path == '/@garethnunns/content-tracker/latest')
-			return send(response, 200, { name: '@garethnunns/content-tracker', version })
+		if(path == '/@generativenoise/content-tracker/latest')
+			return send(response, 200, { name: '@generativenoise/content-tracker', version })
 
 		if(path == '/repos/garethnunns/content-tracker/releases/latest')
 			return send(response, 200, {

@@ -3,7 +3,7 @@
 <img src="build/icon.svg" alt="Content Tracker logo" width="80" align="left">
 
 ### Track files & folders to Airtable or Google Sheets
-[![Checks](https://github.com/garethnunns/content-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/garethnunns/content-tracker/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/garethnunns/content-tracker)](https://github.com/garethnunns/content-tracker/releases/latest) [![Downloads](https://img.shields.io/github/downloads/garethnunns/content-tracker/total)](https://github.com/garethnunns/content-tracker/releases) [![npm](https://img.shields.io/npm/v/@garethnunns/content-tracker)](https://www.npmjs.com/package/@garethnunns/content-tracker) [![App](https://img.shields.io/badge/app-Mac%20%7C%20Windows-0a6cdf)](#app) [![License: GPL-3.0](https://img.shields.io/github/license/garethnunns/content-tracker)](LICENSE)
+[![Checks](https://github.com/garethnunns/content-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/garethnunns/content-tracker/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/garethnunns/content-tracker)](https://github.com/garethnunns/content-tracker/releases/latest) [![Downloads](https://img.shields.io/github/downloads/garethnunns/content-tracker/total)](https://github.com/garethnunns/content-tracker/releases) [![npm](https://img.shields.io/npm/v/@generativenoise/content-tracker)](https://www.npmjs.com/package/@generativenoise/content-tracker) [![App](https://img.shields.io/badge/app-Mac%20%7C%20Windows-0a6cdf)](#app) [![License: GPL-3.0](https://img.shields.io/github/license/garethnunns/content-tracker)](LICENSE)
 
 <br clear="left">
 
@@ -42,7 +42,7 @@ _The app isn't signed by Apple or Microsoft yet. The first time you open it on a
 ### Command line
 
 ```sh
-npx @garethnunns/content-tracker
+npx @generativenoise/content-tracker
 ```
 
 Then you just need to [edit the `config.json` file](#config-file) that was created where the command was executed and re-run with the [config command line option `tracker -c`](#config-option--c---config-path).
@@ -53,7 +53,7 @@ _Will require Node 22.12 or newer to be installed, if on Mac probably install wi
 brew install node
 ```
 
-It says when there's a newer version, and how to get it: `npx @garethnunns/content-tracker@latest`, or `npm install -g @garethnunns/content-tracker` if you installed it. Set `CONTENT_TRACKER_NO_UPDATE_CHECK=1` to stop it looking.
+It says when there's a newer version, and how to get it: `npx @generativenoise/content-tracker@latest`, or `npm install -g @generativenoise/content-tracker` if you installed it. Set `CONTENT_TRACKER_NO_UPDATE_CHECK=1` to stop it looking.
 
 <details>
 <summary><h2 id="airtable-setup">Airtable Setup</h2></summary>
@@ -226,7 +226,7 @@ There's a cache of the metadata of files so they don't have to keep getting quer
 Create the default config as [described above](#config-option--c---config-path), which will generate something like this:
 ```json
 {
-  "$schema": "https://unpkg.com/@garethnunns/content-tracker/core/config.schema.json",
+  "$schema": "https://unpkg.com/@generativenoise/content-tracker/core/config.schema.json",
   "settings": {
     "target": "airtable",
     "files": {

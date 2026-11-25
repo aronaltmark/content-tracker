@@ -87,7 +87,7 @@ test('says when there is a newer version, and how to get it', async () => {
 		})
 		expect(code).toBe(0)
 		expect(output).toContain('Content Tracker 99.0.0 is out')
-		expect(output).toContain('npm install -g @garethnunns/content-tracker')
+		expect(output).toContain('npm install -g @generativenoise/content-tracker')
 	}
 	finally {
 		await releases.close()

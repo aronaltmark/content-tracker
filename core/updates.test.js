@@ -25,12 +25,12 @@ describe('updates', () => {
 			return { version: '1.2.3' }
 		})
 		expect(await latestOnNpm({ env: {}, http })).toBe('1.2.3')
-		expect(asked).toBe('https://registry.npmjs.org/@garethnunns%2fcontent-tracker/latest')
+		expect(asked).toBe('https://registry.npmjs.org/@generativenoise%2fcontent-tracker/latest')
 	})
 
 	it('says how to update as it was run', () => {
-		expect(howToUpdate({ npm_command: 'exec' })).toBe('npx @garethnunns/content-tracker@latest')
-		expect(howToUpdate({})).toBe('npm install -g @garethnunns/content-tracker')
+		expect(howToUpdate({ npm_command: 'exec' })).toBe('npx @generativenoise/content-tracker@latest')
+		expect(howToUpdate({})).toBe('npm install -g @generativenoise/content-tracker')
 	})
 
 	it('finds the installer for this computer in the latest release', async () => {

@@ -1,5 +1,5 @@
 {
-  "name": "@garethnunns/content-tracker",
+  "name": "@generativenoise/content-tracker",
   "productName": "Content Tracker",
   "version": "1.1.1",
   "description": "Track the content in your folders on Airtable or Google Sheets",

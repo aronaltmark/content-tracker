@@ -25,7 +25,7 @@ Signing in with Google needs the app's client secret, which isn't in git: set `G
 
 ## How it fits together
 
-- `core/` is the tracker itself: scanning, the media metadata, working out what's changed and the Airtable and Google Sheets targets. It doesn't know how it's being run, never prints, and logs through the logger it's given. It can be used on its own: `import { syncOnce } from '@garethnunns/content-tracker'`.
+- `core/` is the tracker itself: scanning, the media metadata, working out what's changed and the Airtable and Google Sheets targets. It doesn't know how it's being run, never prints, and logs through the logger it's given. It can be used on its own: `import { syncOnce } from '@generativenoise/content-tracker'`.
 - `cli/` is the command line, which is what npm gets, and `gui/` the Electron & Vue app. Both only wrap `core/`.
 - `e2e/` has the end-to-end tests, and pretend versions of Airtable, Google, npm and GitHub that they run against.
 

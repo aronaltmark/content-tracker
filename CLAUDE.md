@@ -1,6 +1,6 @@
 # Content Tracker
 
-Tracks the folders and files of a project on Airtable or Google Sheets. It's to be listed at https://store.generativenoise.com/tools/content-tracker (gn-site), which Airtable's registration also gives as its home page. It's published to npm as `@garethnunns/content-tracker`, with an Electron app for Mac, Windows and Linux. See README.md for what it does and how it's set up.
+Tracks the folders and files of a project on Airtable or Google Sheets. It's to be listed at https://store.generativenoise.com/tools/content-tracker (gn-site), which Airtable's registration also gives as its home page. It's published to npm as `@generativenoise/content-tracker`, with an Electron app for Mac, Windows and Linux. See README.md for what it does and how it's set up.
 
 - `core/` is the logic and has no idea how it's being run: it never imports from `cli/` or `gui/`, never prints, and logs through the `logger` it's given. Anything both the command line and the app need belongs there.
 - `cli/` and `gui/` only wrap `core/`. `dependencies` is what `npx` installs, so it's only what `core/` and `cli/` use: Electron, Vue and the build tools stay in `devDependencies`.
