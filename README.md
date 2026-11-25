@@ -3,7 +3,7 @@
 <img src="build/icon.svg" alt="Content Tracker logo" width="80" align="left">
 
 ### Track files & folders to Airtable or Google Sheets
-[![Checks](https://github.com/garethnunns/content-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/garethnunns/content-tracker/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/garethnunns/content-tracker)](https://github.com/garethnunns/content-tracker/releases/latest) [![Downloads](https://img.shields.io/github/downloads/garethnunns/content-tracker/total)](https://github.com/garethnunns/content-tracker/releases) [![npm](https://img.shields.io/npm/v/@generativenoise/content-tracker)](https://www.npmjs.com/package/@generativenoise/content-tracker) [![App](https://img.shields.io/badge/app-Mac%20%7C%20Windows-0a6cdf)](#app) [![License: GPL-3.0](https://img.shields.io/github/license/garethnunns/content-tracker)](LICENSE)
+[![Checks](https://github.com/garethnunns/content-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/garethnunns/content-tracker/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/garethnunns/content-tracker)](https://github.com/garethnunns/content-tracker/releases/latest) [![Downloads](https://img.shields.io/github/downloads/garethnunns/content-tracker/total)](https://github.com/garethnunns/content-tracker/releases) [![npm](https://img.shields.io/npm/v/@generativenoise/content-tracker)](https://www.npmjs.com/package/@generativenoise/content-tracker) [![App](https://img.shields.io/badge/app-Mac%20%7C%20Windows%20%7C%20Linux-0a6cdf)](#app) [![License: GPL-3.0](https://img.shields.io/github/license/garethnunns/content-tracker)](LICENSE)
 
 <br clear="left">
 
