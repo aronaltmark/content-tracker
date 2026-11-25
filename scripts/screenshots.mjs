@@ -425,6 +425,18 @@ try {
 	await tab('Tracked')
 	pictures.tracked = await shot('tracked')
 
+	// the picture for when its page is shared: the app as it is, at the size links are
+	// shown at, with no window round it, as the plugins' are
+	const SHARE = { width: 1200, height: 630 }
+	const resize = size => Promise.all([
+		app.evaluate(({ BrowserWindow }, { width, height }) => BrowserWindow.getAllWindows()[0].setContentSize(width, height), size),
+		page.setViewportSize(size)
+	])
+	await resize(SHARE)
+	await page.waitForTimeout(300)
+	await page.screenshot({ path: path.join(OUT, 'share.png'), scale: 'css' })
+	await resize({ width: WIDTH, height: HEIGHT })
+
 	await tab('Help')
 	pictures.help = await shot('help')
 	await tab('About')

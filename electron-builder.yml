@@ -24,4 +24,7 @@ nsis:
   allowToChangeInstallationDirectory: true
 linux:
   target: AppImage
+  # its own name, as the package's has an @ and a / that can't be in a file's
+  executableName: content-tracker
+  category: Utility
 publish: null
