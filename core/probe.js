@@ -55,6 +55,9 @@ function frameRate(rate) {
 	return number(frames) / number(seconds)
 }
 
+// ffprobe says unknown for colour a file isn't tagged with, which is left blank
+const colour = value => (!value || value == 'unknown' ? '' : value)
+
 /**
  * A stream's length from its DURATION tag, where Matroska keeps it, like 00:00:09.994000000
  * @param {string} tag
@@ -117,6 +120,10 @@ export function mediaValues(probe = {}) {
 		videoFPS: videoStill ? 0 : round(fps),
 		...frameCount(videoStream, videoStill, Number.isFinite(fps) ? fps : 0, probe.format?.duration),
 		videoBitRate: number(videoStream?.bit_rate),
+		colorPrimaries: colour(videoStream?.color_primaries),
+		colorTransfer: colour(videoStream?.color_transfer),
+		colorSpace: colour(videoStream?.color_space),
+		colorRange: colour(videoStream?.color_range),
 		audio: audioStream !== undefined,
 		audioCodec: audioStream?.codec_name ?? '',
 		audioSampleRate: number(audioStream?.sample_rate),

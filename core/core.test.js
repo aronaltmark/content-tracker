@@ -257,6 +257,19 @@ describe('media values', () => {
 		expect(values).toMatchObject({ videoStill: true, duration: 0, videoFPS: 0 })
 	})
 
+	it('gives the colour the video is tagged with', () => {
+		const values = mediaValues({ streams: [{
+			codec_type: 'video', color_primaries: 'bt2020', color_transfer: 'smpte2084', color_space: 'bt2020nc', color_range: 'pc'
+		}] })
+		expect(values).toMatchObject({ colorPrimaries: 'bt2020', colorTransfer: 'smpte2084', colorSpace: 'bt2020nc', colorRange: 'pc' })
+	})
+
+	it('leaves colour blank when it isn\'t tagged', () => {
+		const untagged = { colorPrimaries: '', colorTransfer: '', colorSpace: '', colorRange: '' }
+		expect(mediaValues({ streams: [{ codec_type: 'video', color_primaries: 'unknown', color_range: 'unknown' }] })).toMatchObject(untagged)
+		expect(mediaValues()).toMatchObject(untagged)
+	})
+
 	describe('frames', () => {
 		const frames = (stream, format = {}) => {
 			const { frames, framesExact } = mediaValues({ streams: [{ codec_type: 'video', ...stream }], format })
@@ -405,7 +418,7 @@ describe('scan', () => {
 		const stat = await fs.stat(file)
 		const cache = new MetadataCache()
 		// as a version from before frames were counted would have left it
-		const { frames, framesExact, ...older } = mediaValues()
+		const { frames, framesExact, colorRange, ...older } = mediaValues()
 		cache.set(file, stat.size, stat.mtime.toISOString(), older)
 		const set = vi.spyOn(cache, 'set')
 
